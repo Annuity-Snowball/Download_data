@@ -171,7 +171,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_en
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
     # product_ticker_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 티커의 정보를 담고 잇음
     # ex) product_ticker_info = [('20200101','k200'),('20200201','k200'),('20200301','k200')]
-    make_portfolio_account(portfolio_account,sql_queries,strategy_kinds)
+    print(make_portfolio_account(portfolio_account,sql_queries,strategy_kinds))
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
@@ -224,24 +224,38 @@ def getProductPrice(product_date,product_ticker):
     # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
     return [('20200101','1000'),('20200201','2000'),('20200301','3000')]
   
-# 포트폴리오 계좌 만드는 함수
+# 포트폴리오 계좌 만드는 함수 - 
 def make_portfolio_account(portfolio_account,sql_queries,strategy_kinds):
+    """
+    1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
+    2. portfolio_account['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
+
+    Args:
+        portfolio_account (list): 포트폴리오계좌
+        sql_queries (list): 쿼리문들이 담겨있는 리스트
+        strategy_kinds (list): 전략 종류들이 담겨 있는 리스트
+
+    """
     for i,sql_query in enumerate(sql_queries):
         product_ticker_info = getProductTicker(sql_query,3)
         
-        strategy_dict=dict()
-        product_dict=dict()
+        strategy_dict=dict() # key가 '전략1'등인 딕셔너리
+        product_dict=dict() # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니
         
         # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
         for product_date,product_ticker in product_ticker_info:
             # product_price_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 가격의 정보를 담고 잇음
             # ex) product_price_info = [('20200101','1000'),('20200201','2000'),('20200301','3000')]
             product_price_info=getProductPrice(product_date,product_ticker)
-            product_dict[product_ticker]=product_price_info
+            product_dict[product_ticker]=product_price_info # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
         
-        strategy_dict[strategy_kinds[i]]=product_dict
+        strategy_dict[strategy_kinds[i]]=product_dict # key가 '전략1'등인 딕셔너리 추가
+        
+        strategy_dict[strategy_kinds[i]+" 계좌금액"]=[] # 추가 수정 필요!!!!!!
+        
         portfolio_account.append(strategy_dict)
     
+    portfolio_account.append({'포트폴리오 계좌금액':[]})# 추가 수정 필요!!!!!!
     return portfolio_account
 
 # 실행하는 부분이 메인함수이면 실행 
