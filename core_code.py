@@ -88,8 +88,8 @@ class Strategy():
         self.end_time = end_time
         
     # 전략의 시작날짜와 끝날짜를 반영하는 메소드
-    def getStratgyDate(self):
-        return self.start_time,self.end_time
+    # def getStratgyDate(self):
+    #     return self.start_time,self.end_time
         
         
     # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문 반환하는 매소드
@@ -112,7 +112,7 @@ class Strategy():
         return self.strategy_kind,self.sql_query
 
 # 백테스트 함수 생성
-def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_end_time, rebalance_cycle, input_type, input_money, strategy_start_time, strategy_end_time, strategy_kind, sql_query):
+def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_end_time, rebalance_cycle, input_type, input_money, strategy_kinds, sql_queries):
     """
     백테스트를 하는 함수
     백테스트를 직접하는 부분은 추가 구현 필요합니다!
@@ -127,8 +127,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_en
         rebalance_cycle (int): 리밸런싱 주기
         input_type (str): 포트폴리오에서 금액 납입 방법
         input_money (int): 포트폴리오에서 납입 금액 액수
-        strategy_kind (str): Strategy에서 받아온 전략 종류
-        sql_query (str): Strategy에서 받아온 쿼리문
+        strategy_kinds (list): Strategy에서 받아온 전략들 종류들
+        sql_queries (list): Strategy에서 받아온 쿼리문들
     """
     
     # 매달별 포트폴리오 계좌에 있는 금액을 표시하는 리스트 생성
@@ -168,12 +168,10 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_en
     # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     rebalance_date_list = list()
     
-    # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하는 부분 구현
-    product_ticker_info = getProductTicker(sql_query,3)
-    
-    # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
-    for product_date,product_ticker in product_ticker_info:
-        print(getProductPrice(product_date,product_ticker))
+    # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
+    # product_ticker_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 티커의 정보를 담고 잇음
+    # ex) product_ticker_info = [('20200101','k200'),('20200201','k200'),('20200301','k200')]
+    make_portfolio_account(portfolio_account,sql_queries,strategy_kinds)
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
@@ -225,23 +223,45 @@ def getProductPrice(product_date,product_ticker):
     
     # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
     return [('20200101','1000'),('20200201','2000'),('20200301','3000')]
+  
+# 포트폴리오 계좌 만드는 함수
+def make_portfolio_account(portfolio_account,sql_queries,strategy_kinds):
+    for i,sql_query in enumerate(sql_queries):
+        product_ticker_info = getProductTicker(sql_query,3)
+        
+        strategy_dict=dict()
+        product_dict=dict()
+        
+        # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
+        for product_date,product_ticker in product_ticker_info:
+            # product_price_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 가격의 정보를 담고 잇음
+            # ex) product_price_info = [('20200101','1000'),('20200201','2000'),('20200301','3000')]
+            product_price_info=getProductPrice(product_date,product_ticker)
+            product_dict[product_ticker]=product_price_info
+        
+        strategy_dict[strategy_kinds[i]]=product_dict
+        portfolio_account.append(strategy_dict)
     
-
+    return portfolio_account
 
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
     # 포트폴리오 생성 예시
     portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',20000)
     strategy_1=Strategy('PER 저',3,'20220101','20220501')
+    strategy_2=Strategy('PER 고',2,'20220101','20220501')
 
     # 생성한 객체 어트리뷰트들에 할당이 되었는지 확인
     print(portfolio_1.__dict__)
     print(strategy_1.__dict__)
     print()
     print(portfolio_1.returnToBacktest())
-    print(strategy_1.getStratgyDate())
     print(strategy_1.getProductListQuery())
     print()
 
-    # 백테스트 함수 실행위한 파라미터 입력 위해서 언패킹 사용
-    backTesting(*portfolio_1.returnToBacktest(),*strategy_1.getStratgyDate(),*strategy_1.getProductListQuery()) 
+    # 백테스트 함수 사용하기 위해서 리스트들 생성 -> 추후에 최적화 필요
+    stratgy_kind_list = [strategy_1.getProductListQuery()[0],strategy_2.getProductListQuery()[0]] # 전략종류들을 받음
+    stratgy_sql_query_list = [strategy_1.getProductListQuery()[1],strategy_2.getProductListQuery()[1]] # 전략들에 따른 쿼리문들을 받음
+    
+    # 백테스트 함수 실행
+    backTesting(*portfolio_1.returnToBacktest(), stratgy_kind_list, stratgy_sql_query_list) 

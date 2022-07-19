@@ -7,6 +7,5 @@ delta = end_date - start_date   # returns timedelta
 
 for i in range(delta.days + 1):
     day = start_date + timedelta(days=i)
-    print(day.month)
     if day.day==1:
         print(day)
