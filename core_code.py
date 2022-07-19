@@ -64,8 +64,7 @@ class Portfolio():
     # 백테스트에 사용할 포트폴리오 객체 정보들을 넘겨주는 매소드
     def returnToBacktest(self):
         return self.portfolio_id, self.strategy_ratio, self.start_time, self.end_time, self.rebalance_cycle, self.input_type, self.input_money
-        
-        
+              
 # 전략 클래스 생성
 class Strategy():
     """
@@ -170,10 +169,12 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_en
     rebalance_date_list = list()
     
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하는 부분 구현
-    print(getProductTickerQuery(sql_query,3))
+    product_ticker_info = getProductTicker(sql_query,3)
     
-    # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현
-    
+    # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
+    for product_date,product_ticker in product_ticker_info:
+        print(getProductPrice(product_date,product_ticker))
+    pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
 def getDateInfo(start_date,end_date,interval):
@@ -188,35 +189,59 @@ def getDateInfo(start_date,end_date,interval):
         if day.day==1:
             print(day)
     pass
-    
-def getProductTickerQuery(sql_query,interval_dates):
+ 
+# 해당날짜들에 대응하는 금융상품들 정보 반환하는 함수
+def getProductTicker(sql_query,interval_dates):
     """
-    sql_query(str) : 날짜 내용 없이 전략내용을 조회하는 쿼리문
-    interval_dates(str) : 납입날짜들, 리밸런싱날짜들이 리스트로 입력받음
-    
     1. str(20200101) 부분 수정 필요
     2. 데이터베이스에서 정보 가져오는 부분 구현 및 return 부분도 추가 필요
+    
+    Args:
+    sql_query(str) : 날짜 내용 없이 전략내용을 조회하는 쿼리문
+    interval_dates(str) : 납입날짜들 혹은 리밸런싱날짜들이 리스트로 입력받음
+    
     """
     # get_stratgy_price_query 는 전략종류에 따라서 가져온 금융상품의 정보(금융상품티커) 을 가져오는 쿼리
     get_product_ticker_query=sql_query.split(' ')
     get_product_ticker_query.insert(4,"where evaluate_date = '"+str(20200101)+"'") # str(20200101) 은 interval_dates들을 반복문으로 대입
     get_product_ticker_query=" ".join(get_product_ticker_query)
     print(get_product_ticker_query)
-    # 데이터베이스에서 해당하는 금융상품 티커, 날짜를 가져와서 반환
-    return '20200101','k200'
+    # 데이터베이스에서 해당하는 날짜들, 금융상품티커 가져와서 반환 - return 부분도 수정 필요
+    return [('20200101','k200'),('20200201','k200'),('20200301','k200')]
 
-# 포트폴리오 생성 예시
-portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',20000)
-strategy_1=Strategy('PER 저',3,'20220101','20220501')
+# 날짜에 대응하는 금융상품의 가격을 가져오는 함수
+def getProductPrice(product_date,product_ticker):
+    """
+    1. 쿼리문 안에 있는 테이블 등 상세내용 수정 필요
+    2. 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현
 
-# 생성한 객체 어트리뷰트들에 할당이 되었는지 확인
-print(portfolio_1.__dict__)
-print(strategy_1.__dict__)
-print()
-print(portfolio_1.returnToBacktest())
-print(strategy_1.getStratgyDate())
-print(strategy_1.getProductListQuery())
-print()
+    Args:
+        product_dates (str): 금융상품 가격을 조회할 날짜들
+        product_ticker (str): 조회할 금융상품의 티커
+    """
+    # 쿼리문 안에 있는 테이블 등 상세내용 수정 필요
+    sql_query = "select date, price from "+product_ticker+"_product_price where date='"+product_date+"'"
+    print(sql_query)
+    
+    # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
+    return [('20200101','1000'),('20200201','2000'),('20200301','3000')]
+    
 
-# 백테스트 함수 실행위한 파라미터 입력 위해서 언패킹 사용
-backTesting(*portfolio_1.returnToBacktest(),*strategy_1.getStratgyDate(),*strategy_1.getProductListQuery()) 
+
+# 실행하는 부분이 메인함수이면 실행 
+if __name__ == "__main__":
+    # 포트폴리오 생성 예시
+    portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',20000)
+    strategy_1=Strategy('PER 저',3,'20220101','20220501')
+
+    # 생성한 객체 어트리뷰트들에 할당이 되었는지 확인
+    print(portfolio_1.__dict__)
+    print(strategy_1.__dict__)
+    print()
+    print(portfolio_1.returnToBacktest())
+    print(strategy_1.getStratgyDate())
+    print(strategy_1.getProductListQuery())
+    print()
+
+    # 백테스트 함수 실행위한 파라미터 입력 위해서 언패킹 사용
+    backTesting(*portfolio_1.returnToBacktest(),*strategy_1.getStratgyDate(),*strategy_1.getProductListQuery()) 
