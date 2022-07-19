@@ -112,7 +112,9 @@ class Strategy():
         return self.strategy_kind,self.sql_query
 
 # 백테스트 함수 생성
-def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_end_time, rebalance_cycle, input_type, input_money, strategy_kinds, sql_queries):
+def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, 
+                portfolio_end_time, rebalance_cycle, input_type, input_money, 
+                strategy_kinds, sql_queries):
     """
     백테스트를 하는 함수
     백테스트를 직접하는 부분은 추가 구현 필요합니다!
