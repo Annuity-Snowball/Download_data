@@ -119,7 +119,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_en
     백테스트를 직접하는 부분은 추가 구현 필요합니다!
     1-1. 납입하는 날짜들을 계산하는 부분 구현 필요!
     1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요
-    2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하는 부분 에서 날짜들을 1-2에서 구한 날짜들로 for문 돌려야 함
+    2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하는 부분 getProductTickerQuery()은 추가 수정 필요
     Args:
         portfolio_id (str): 포트폴리오 아이디
         strategy_ratio (list): 포트폴리오를 구성하는 전략별 비율, len()을 통해서 전략의 개수도 후에 구할 수 있음
@@ -163,21 +163,20 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, portfolio_en
     portfolio_account=list()
     
     
-    # 1-1. 납입하는 날짜들을 계산하는 부분 구현 필요
+    # 1-1. 납입하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     input_date_list = list()
     
-    # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요
+    # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     rebalance_date_list = list()
     
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하는 부분 구현
-    # get_stratgy_price_query 는 전략종류에 따라서 가져온 금융상품의 정보(금융상품티커) 을 가져오는 쿼리
-    get_product_ticker_query=sql_query.split(' ')
-    get_product_ticker_query.insert(4,"where evaluate_date = '"+str(20200101)+"'") # str(20200101) 은 납입하는 날짜들을 반복문으로 대입
-    get_product_ticker_query=" ".join(get_product_ticker_query)
-    print(get_product_ticker_query)
+    print(getProductTickerQuery(sql_query,3))
+    
+    # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현
+    
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
-def getDateInfo(start_date,end_date,interval=2):
+def getDateInfo(start_date,end_date,interval):
     
     start_date = date(2008, 1, 15) 
     end_date = date(2008, 12, 15)    # perhaps date.now()
@@ -190,6 +189,21 @@ def getDateInfo(start_date,end_date,interval=2):
             print(day)
     pass
     
+def getProductTickerQuery(sql_query,interval_dates):
+    """
+    sql_query(str) : 날짜 내용 없이 전략내용을 조회하는 쿼리문
+    interval_dates(str) : 납입날짜들, 리밸런싱날짜들이 리스트로 입력받음
+    
+    1. str(20200101) 부분 수정 필요
+    2. 데이터베이스에서 정보 가져오는 부분 구현 및 return 부분도 추가 필요
+    """
+    # get_stratgy_price_query 는 전략종류에 따라서 가져온 금융상품의 정보(금융상품티커) 을 가져오는 쿼리
+    get_product_ticker_query=sql_query.split(' ')
+    get_product_ticker_query.insert(4,"where evaluate_date = '"+str(20200101)+"'") # str(20200101) 은 interval_dates들을 반복문으로 대입
+    get_product_ticker_query=" ".join(get_product_ticker_query)
+    print(get_product_ticker_query)
+    # 데이터베이스에서 해당하는 금융상품 티커, 날짜를 가져와서 반환
+    return '20200101','k200'
 
 # 포트폴리오 생성 예시
 portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',20000)
