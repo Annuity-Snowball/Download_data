@@ -179,15 +179,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
 def getDateInfo(start_date,end_date,interval):
     
-    start_date = date(2008, 1, 15) 
-    end_date = date(2008, 12, 15)    # perhaps date.now()
-
-    delta = end_date - start_date   # returns timedelta
-
-    for i in range(delta.days + 1):
-        day = start_date + timedelta(days=i)
-        if day.day==1:
-            print(day)
+    
     pass
  
 # 해당날짜들에 대응하는 금융상품들 정보 반환하는 함수
