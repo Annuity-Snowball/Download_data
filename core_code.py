@@ -215,10 +215,10 @@ def getProductPrice(product_date,product_ticker):
         product_dates (str): 금융상품 가격을 조회할 날짜들
         product_ticker (str): 조회할 금융상품의 티커
     Return:
-        ex) ['2020-01-01', 26531.0]
+        ex) ['china', 5952.0]
     """
     # 쿼리문 안에 있는 테이블 등 상세내용 수정 필요
-    sql_query = "select product_date, high_price from price_"+product_ticker+" where product_date='"+product_date+"'"
+    sql_query = "select high_price from price_"+product_ticker+" where product_date='"+product_date+"'"
     # print('getProductPrice query:',sql_query)
 
     # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
@@ -226,9 +226,9 @@ def getProductPrice(product_date,product_ticker):
 
     result=snowball.fetchone()
     result=list(result)
-    result[0]=str(result[0])
+    result.insert(0,product_ticker)
     
-    
+    print('getProductPrice result :', result)
     # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
     return result
   
@@ -261,7 +261,7 @@ def makePortfolioAccount(sql_queries,strategy_kinds):
         
         strategy_dict=dict() # key가 '전략1'등인 딕셔너리
         
-        product_dict=dict() # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니
+        product_dict=dict() # key가 '전략1로 선택한 금융상품1 날짜' 등인 딕셔러니
         # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
         for product_ticker_info in product_ticker_infos:
             # print("product_ticker_info :",product_ticker_info)
@@ -270,15 +270,15 @@ def makePortfolioAccount(sql_queries,strategy_kinds):
                 
                 # print('product_date, product_ticker :',product_date,product_ticker)
                 # product_price_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 가격의 정보를 담고 잇음
-                # ex) product_price_info = ['2020-01-01', 26531.0]
+                # ex) product_price_info = ['china', 5952.0]
                 product_price_info=getProductPrice(product_date,product_ticker)
                 # print('product_price_info :',product_price_info)
                 
                 # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
-                if product_ticker in product_dict:
-                    product_dict[product_ticker].append(product_price_info)
+                if product_date in product_dict:
+                    product_dict[product_date].append(product_price_info)
                 else:
-                    product_dict[product_ticker] = [product_price_info]
+                    product_dict[product_date] = [product_price_info]
                     
         
         strategy_dict[strategy_kinds[i]]=product_dict # key가 '전략1'등인 딕셔너리 추가
