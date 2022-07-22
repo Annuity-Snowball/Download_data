@@ -145,35 +145,6 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
         sql_queries (list): Strategy에서 받아온 쿼리문들
     """
     
-    # 매달별 포트폴리오 계좌에 있는 금액을 표시하는 리스트 생성
-    # portfolio_account = [
-    #                         {'전략1':
-    #                                 {
-    #                                    '전략1로 선택한 금융상품1': [('날짜1','계좌에 있는 금융상품1을 통한 금액'),('날짜2','계좌에 있는 금융상품1을 통한 금액')],
-    #                                    '전략1로 선택한 금융상품2': [('날짜1','계좌에 있는 금융상품2을 통한 금액'),('날짜2','계좌에 있는 금융상품2을 통한 금액')]
-    #                                 },
-    #                         '전략1 계좌금액':[('날짜1','계좌에 있는 전략1을 통한 금액'),('날짜2','계좌에 있는 전략1을 통한 금액')]
-                            
-    #                         },
-    #                         {'전략2':
-    #                                 {
-    #                                     '전략2로 선택한 금융상품3': [('날짜1','계좌에 있는 금융상품3을 통한 금액'),('날짜2','계좌에 있는 금융상품3을 통한 금액')],
-    #                                     '전략2로 선택한 금융상품4': [('날짜1','계좌에 있는 금융상품4을 통한 금액'),('날짜2','계좌에 있는 금융상품4을 통한 금액')]
-    #                                 },
-    #                         '전략2 계좌금액':[('날짜1','계좌에 있는 전략2을 통한 금액'),('날짜2','계좌에 있는 전략2을 통한 금액')]
-    #                         },
-    #                         {'전략3':
-    #                                 {
-    #                                     '전략3로 선택한 금융상품5': [('날짜1','계좌에 있는 금융상품5을 통한 금액'),('날짜2','계좌에 있는 금융상품5을 통한 금액')],
-    #                                     '전략3로 선택한 금융상품6': [('날짜1','계좌에 있는 금융상품6을 통한 금액'),('날짜2','계좌에 있는 금융상품6을 통한 금액')]
-    #                                 },
-    #                         '전략3 계좌금액':[('날짜1','계좌에 있는 전략3을 통한 금액'),('날짜2','계좌에 있는 전략3을 통한 금액')]
-    #                         },
-    #                         {
-    #                                 '포트폴리오 계좌금액':[('날짜1','계좌에 있는 포트폴리오 총 금액'),('날짜2','계좌에 있는 포트폴리오 총 금액')]
-    #                         }
-    #                     ]
-    portfolio_account=list()
     
     
     # 1-1. 납입하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
@@ -183,9 +154,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     rebalance_date_list = list()
     
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
-    # product_ticker_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 티커의 정보를 담고 잇음
-    # ex) product_ticker_info = [('20200101','k200'),('20200201','k200'),('20200301','k200')]
-    print(make_portfolio_account(portfolio_account,sql_queries,strategy_kinds))
+    # poertfolio_account 는 포트폴리오 계좌의 구조가 담긴 리스트, portfolio_account_explain.py 참조
+    portfolio_account = makePortfolioAccount(sql_queries, strategy_kinds)
+    print(portfolio_account)
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
@@ -205,25 +176,33 @@ def getProductTicker(sql_query,interval_dates):
     sql_query(str) : getProductListQuery() 에서 받은 날짜지정이 안되어 있는 쿼리문
     interval_dates(str) : 납입날짜들 혹은 리밸런싱날짜들이 리스트로 입력받음
     
+    Return:
+    ex) [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']]
     """
-    # 반환할 값인 result를 초기화
-    
     result=list()
-    # get_stratgy_price_query 는 전략종류에 따라서 가져온 금융상품의 정보(금융상품티커) 을 가져오는 쿼리
-    get_product_ticker_query=sql_query.split(' ')
-    get_product_ticker_query.insert(4,"where product_date = '"+str(20210101)+"'") # str(20200101) 은 interval_dates들을 반복문으로 대입
-    get_product_ticker_query=" ".join(get_product_ticker_query)
+    for interval_date in interval_dates:
+    
+        # get_stratgy_price_query 는 전략종류에 따라서 가져온 금융상품의 정보(금융상품티커) 을 가져오는 쿼리
+        get_product_ticker_query=sql_query.split(' ')
+        get_product_ticker_query.insert(4,"where product_date = '"+str(interval_date)+"'") # str(20200101) 은 interval_dates들을 반복문으로 대입
+        get_product_ticker_query=" ".join(get_product_ticker_query)
 
-    print('get_product_ticker_query :',get_product_ticker_query)
-    
-    # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
-    snowball.execute(get_product_ticker_query) 
-    answers=list(snowball.fetchall())
-    for answer in answers:
-        result.append((str(20210101),answer[1]))
-    
-    print('getProductTicker return :',result)
-    # 데이터베이스에서 해당하는 날짜들, 금융상품티커 가져와서 반환 - return 부분도 수정 필요
+        # print('get_product_ticker_query :',get_product_ticker_query)
+        
+        # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
+        snowball.execute(get_product_ticker_query) 
+        
+        # sql 결과값들로 조회한 값들을 anwers에 담음
+        answers=list(snowball.fetchall())
+        # print("before answers :",answers)
+        for i in range(len(answers)):
+            answers[i] = list(answers[i])
+            answers[i][0] = str(answers[i][0])
+        # print("after answers :",answers)
+        result.append(answers)
+        # print("result :",result)
+    # 데이터베이스에서 해당하는 날짜들, 금융상품티커 가져와서 반환 
+    # print('getProductTicker result :', result)
     return result
 
 # 날짜에 대응하는 금융상품의 가격을 가져오는 함수
@@ -235,16 +214,26 @@ def getProductPrice(product_date,product_ticker):
     Args:
         product_dates (str): 금융상품 가격을 조회할 날짜들
         product_ticker (str): 조회할 금융상품의 티커
+    Return:
+        ex) ['2020-01-01', 26531.0]
     """
     # 쿼리문 안에 있는 테이블 등 상세내용 수정 필요
-    sql_query = "select date, price from "+product_ticker+"_product_price where date='"+product_date+"'"
-    print(sql_query)
+    sql_query = "select product_date, high_price from price_"+product_ticker+" where product_date='"+product_date+"'"
+    # print('getProductPrice query:',sql_query)
+
+    # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
+    snowball.execute(sql_query) 
+
+    result=snowball.fetchone()
+    result=list(result)
+    result[0]=str(result[0])
+    
     
     # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
-    return [('20200101','1000'),('20200201','2000'),('20200301','3000')]
+    return result
   
 # 포트폴리오 계좌 만드는 함수 - 
-def make_portfolio_account(portfolio_account,sql_queries,strategy_kinds):
+def makePortfolioAccount(sql_queries,strategy_kinds):
     """
     1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
     2. portfolio_account['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
@@ -255,23 +244,48 @@ def make_portfolio_account(portfolio_account,sql_queries,strategy_kinds):
         strategy_kinds (list): 전략 종류들이 담겨 있는 리스트
 
     """
+    portfolio_account = list()
+    
+    # 전략 별로 for 문이 돈다
     for i,sql_query in enumerate(sql_queries):
-        product_ticker_info = getProductTicker(sql_query,3)
+        # print()
+        # product_ticker_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 티커의 정보를 담고 잇음
+        # ex) product_ticker_infos = 
+        # [
+        #  [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']], 
+        #  [['2021-02-01', 'bank'], ['2021-02-01', 'kospi'], ['2021-02-01', 'energy']], 
+        #  [['2021-03-01', 'bank'], ['2021-03-01', 'kospi'], ['2021-03-01', 'energy']]
+        # ]
+        product_ticker_infos = getProductTicker(sql_query,['2021-01-01','2021-02-01','2021-03-01'])
+        # print("product_ticker_infos: " ,product_ticker_infos)
         
         strategy_dict=dict() # key가 '전략1'등인 딕셔너리
-        product_dict=dict() # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니
         
+        product_dict=dict() # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니
         # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
-        for product_date,product_ticker in product_ticker_info:
-            # product_price_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 가격의 정보를 담고 잇음
-            # ex) product_price_info = [('20200101','1000'),('20200201','2000'),('20200301','3000')]
-            product_price_info=getProductPrice(product_date,product_ticker)
-            product_dict[product_ticker]=product_price_info # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
+        for product_ticker_info in product_ticker_infos:
+            # print("product_ticker_info :",product_ticker_info)
+            # ex) product_ticker_info = [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']]
+            for product_date,product_ticker in product_ticker_info:
+                
+                # print('product_date, product_ticker :',product_date,product_ticker)
+                # product_price_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 가격의 정보를 담고 잇음
+                # ex) product_price_info = ['2020-01-01', 26531.0]
+                product_price_info=getProductPrice(product_date,product_ticker)
+                # print('product_price_info :',product_price_info)
+                
+                # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
+                if product_ticker in product_dict:
+                    product_dict[product_ticker].append(product_price_info)
+                else:
+                    product_dict[product_ticker] = [product_price_info]
+                    
         
         strategy_dict[strategy_kinds[i]]=product_dict # key가 '전략1'등인 딕셔너리 추가
         
         strategy_dict[strategy_kinds[i]+" 계좌금액"]=[] # 추가 수정 필요!!!!!!
         
+        # 이 부분을 통해서 for 문을 돌면서 '전략1','전략2' 등 전략들이 다 추가가 된다!
         portfolio_account.append(strategy_dict)
     
     portfolio_account.append({'포트폴리오 계좌금액':[]})# 추가 수정 필요!!!!!!
@@ -290,8 +304,8 @@ if __name__ == "__main__":
 
 
     # 백테스트 함수 사용하기 위해서 리스트들 생성 -> 추후에 최적화 필요
-    stratgy_kind_list = [strategy_1.getProductListQuery()[0],strategy_2.getProductListQuery()[0]] # 전략종류들을 받음
-    stratgy_sql_query_list = [strategy_1.getProductListQuery()[1],strategy_2.getProductListQuery()[1]] # 전략들에 따른 쿼리문들을 받음
+    stratgy_kind_list = [strategy_1.getProductListQuery()[0],strategy_2.getProductListQuery()[0]] # 전략종류(PER 저, PER 고 등)들을 받음
+    stratgy_sql_query_list = [strategy_1.getProductListQuery()[1],strategy_2.getProductListQuery()[1]] # 전략들에 따른 쿼리문들(날짜지정X)을 받음
     
     # 백테스트 함수 실행
     backTesting(*portfolio_1.returnToBacktest(), stratgy_kind_list, stratgy_sql_query_list)
