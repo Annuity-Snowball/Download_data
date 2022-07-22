@@ -1,4 +1,7 @@
 from datetime import date, timedelta
+import pymysql
+
+
 
 # 포트폴리오 클래스 생성
 class Portfolio():
@@ -92,19 +95,28 @@ class Strategy():
     #     return self.start_time,self.end_time
         
         
-    # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문 반환하는 매소드
+    # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문  반환하는 매소드
     def getProductListQuery(self):
         """
         평가지표들에 따라서 쿼리문들을 추가해야 한다 -> 추가 및 수정필요!!
+        날짜는 지정이 안되어 있는 쿼리문을 반환 합니다!
         """
         
         if self.strategy_kind == 'PER 저':
             # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-            self.sql_query='select product_ticker from product_evaluate order by estimated_per asc limit '+str(self.product_count_per_strategy)
+            self.sql_query='select product_date,product_ticker from product_evaluate order by per asc limit '+str(self.product_count_per_strategy)
         
         elif self.strategy_kind == 'PER 고':
             # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-            self.sql_query='select product_ticker from product_evaluate order by estimated_per desc limit '+str(self.product_count_per_strategy)
+            self.sql_query='select product_date,product_ticker from product_evaluate order by per desc limit '+str(self.product_count_per_strategy)
+        
+        elif self.strategy_kind == 'PBR 저':
+            # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
+            self.sql_query='select product_date,product_ticker from product_evaluate order by pbr asc limit '+str(self.product_count_per_strategy)
+            
+        elif self.strategy_kind == 'PBR 고':
+        # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
+            self.sql_query='select product_date,product_ticker from product_evaluate order by pbr desc limit '+str(self.product_count_per_strategy)
             
         # 위에서의 'PER 저', 'PER 고' 같이 모든 평가 지표들 마다 쿼리문을 작성할 것
         pass
@@ -185,21 +197,34 @@ def getDateInfo(start_date,end_date,interval):
 # 해당날짜들에 대응하는 금융상품들 정보 반환하는 함수
 def getProductTicker(sql_query,interval_dates):
     """
+    
     1. str(20200101) 부분 수정 필요
     2. 데이터베이스에서 정보 가져오는 부분 구현 및 return 부분도 추가 필요
     
     Args:
-    sql_query(str) : 날짜 내용 없이 전략내용을 조회하는 쿼리문
+    sql_query(str) : getProductListQuery() 에서 받은 날짜지정이 안되어 있는 쿼리문
     interval_dates(str) : 납입날짜들 혹은 리밸런싱날짜들이 리스트로 입력받음
     
     """
+    # 반환할 값인 result를 초기화
+    
+    result=list()
     # get_stratgy_price_query 는 전략종류에 따라서 가져온 금융상품의 정보(금융상품티커) 을 가져오는 쿼리
     get_product_ticker_query=sql_query.split(' ')
-    get_product_ticker_query.insert(4,"where evaluate_date = '"+str(20200101)+"'") # str(20200101) 은 interval_dates들을 반복문으로 대입
+    get_product_ticker_query.insert(4,"where product_date = '"+str(20210101)+"'") # str(20200101) 은 interval_dates들을 반복문으로 대입
     get_product_ticker_query=" ".join(get_product_ticker_query)
-    print(get_product_ticker_query)
+
+    print('get_product_ticker_query :',get_product_ticker_query)
+    
+    # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
+    snowball.execute(get_product_ticker_query) 
+    answers=list(snowball.fetchall())
+    for answer in answers:
+        result.append((str(20210101),answer[1]))
+    
+    print('getProductTicker return :',result)
     # 데이터베이스에서 해당하는 날짜들, 금융상품티커 가져와서 반환 - return 부분도 수정 필요
-    return [('20200101','k200'),('20200201','k200'),('20200301','k200')]
+    return result
 
 # 날짜에 대응하는 금융상품의 가격을 가져오는 함수
 def getProductPrice(product_date,product_ticker):
@@ -258,18 +283,16 @@ if __name__ == "__main__":
     portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',20000)
     strategy_1=Strategy('PER 저',3,'20220101','20220501')
     strategy_2=Strategy('PER 고',2,'20220101','20220501')
+    
+    # 접속하기 - 해당 데이터 베이스에 접속
+    db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
+    snowball=db.cursor() 
 
-    # 생성한 객체 어트리뷰트들에 할당이 되었는지 확인
-    print(portfolio_1.__dict__)
-    print(strategy_1.__dict__)
-    print()
-    print(portfolio_1.returnToBacktest())
-    print(strategy_1.getProductListQuery())
-    print()
 
     # 백테스트 함수 사용하기 위해서 리스트들 생성 -> 추후에 최적화 필요
     stratgy_kind_list = [strategy_1.getProductListQuery()[0],strategy_2.getProductListQuery()[0]] # 전략종류들을 받음
     stratgy_sql_query_list = [strategy_1.getProductListQuery()[1],strategy_2.getProductListQuery()[1]] # 전략들에 따른 쿼리문들을 받음
     
     # 백테스트 함수 실행
-    backTesting(*portfolio_1.returnToBacktest(), stratgy_kind_list, stratgy_sql_query_list) 
+    backTesting(*portfolio_1.returnToBacktest(), stratgy_kind_list, stratgy_sql_query_list)
+    db.close()  
