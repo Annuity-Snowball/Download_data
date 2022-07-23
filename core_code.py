@@ -133,6 +133,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     1-1. 납입하는 날짜들을 계산하는 부분 구현 필요!
     1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요
     2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하는 부분 getProductTickerQuery()은 추가 수정 필요
+    PortfolioInfo()를 통해서 PortfolioHistory() 와 PortfolioAccount() 도 만들어야 한다
     Args:
         portfolio_id (str): 포트폴리오 아이디
         strategy_ratio (list): 포트폴리오를 구성하는 전략별 비율, len()을 통해서 전략의 개수도 후에 구할 수 있음
@@ -154,9 +155,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     rebalance_date_list = list()
     
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
-    # poertfolio_account 는 포트폴리오 계좌의 구조가 담긴 리스트, portfolio_account_explain.py 참조
-    portfolio_account = makePortfolioAccount(sql_queries, strategy_kinds)
-    print(portfolio_account)
+    # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
+    portfolio_info = makePortfolioInfo(sql_queries, strategy_kinds)
+    print(portfolio_info)
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
@@ -228,23 +229,23 @@ def getProductPrice(product_date,product_ticker):
     result=list(result)
     result.insert(0,product_ticker)
     
-    print('getProductPrice result :', result)
+    # print('getProductPrice result :', result)
     # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
     return result
   
 # 포트폴리오 계좌 만드는 함수 - 
-def makePortfolioAccount(sql_queries,strategy_kinds):
+def makePortfolioInfo(sql_queries,strategy_kinds):
     """
     1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
-    2. portfolio_account['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
+    2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
 
     Args:
-        portfolio_account (list): 포트폴리오계좌
+        portfolio_info (list): 포트폴리오계좌
         sql_queries (list): 쿼리문들이 담겨있는 리스트
         strategy_kinds (list): 전략 종류들이 담겨 있는 리스트
 
     """
-    portfolio_account = list()
+    portfolio_info = list()
     
     # 전략 별로 for 문이 돈다
     for i,sql_query in enumerate(sql_queries):
@@ -283,13 +284,11 @@ def makePortfolioAccount(sql_queries,strategy_kinds):
         
         strategy_dict[strategy_kinds[i]]=product_dict # key가 '전략1'등인 딕셔너리 추가
         
-        strategy_dict[strategy_kinds[i]+" 계좌금액"]=[] # 추가 수정 필요!!!!!!
         
         # 이 부분을 통해서 for 문을 돌면서 '전략1','전략2' 등 전략들이 다 추가가 된다!
-        portfolio_account.append(strategy_dict)
+        portfolio_info.append(strategy_dict)
     
-    portfolio_account.append({'포트폴리오 계좌금액':[]})# 추가 수정 필요!!!!!!
-    return portfolio_account
+    return portfolio_info
 
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
