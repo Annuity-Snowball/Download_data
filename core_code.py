@@ -157,7 +157,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
     portfolio_product_price = getPortfolioProductPrice(sql_queries, strategy_kinds,['2021-01-01','2021-02-01','2021-03-01'])
     print(portfolio_product_price)
-    # makePortfolioHistory(portfolio_info)
+    portfolio_product_count = getPortfolioProductCount(portfolio_product_price,input_money,strategy_ratio)
+    print(portfolio_product_count)
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
@@ -246,7 +247,6 @@ def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
 
     """
     portfolio_product_price = list()
-    portfolio_product_price.append({'현금':[]})
     # 전략 별로 for 문이 돈다
     for i,sql_query in enumerate(sql_queries):
         # print()
@@ -290,28 +290,41 @@ def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
     
     return portfolio_product_price
 
-# 포트리오의 계좌(시간 별로 담은 금융상품의 개수들)
-def makePortfolioHistory(portfolio_info,input_money,stratgy_ratio):
+# 포트리오의 계좌(시간 별로 새로 담은 금융상품의 개수들) - ing
+def getPortfolioProductCount(portfolio_product_price,input_money,strategy_ratio):
+    """_summary_
+
+    Args:
+        portfolio_product_price (dict): _description_
+        input_money (int): _description_
+        stratgy_ratio (list): _description_
+    """
     
     # 복사를 통해서 portfolio_history 생성
-    portfolio_history=copy.deepcopy(portfolio_info)
+    portfolio_product_count=copy.deepcopy(portfolio_product_price)
     
-    # stratgy_keys = list(portfolio_info[i].keys())[0] -> i를 변경시키면서 '현금', 'PER 저' 등 가져올수 있음!
-    # product_price_dict = list(portfolio_info[i].values())[0] -> i를 변경시기면서 {'2021-01-01': [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]], '2021-02-01': [['bank', 1853.0], ['kospi', 26166.0], ['energy', 4145.0]], '2021-03-01': [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]]}
-    # product_price_dict_keys = list(product_price_dict.keys()) -> ['2021-01-01', '2021-02-01', '2021-03-01']
-    print("makePortfolioHistory")
-    product_price_dict=list(portfolio_info[1].values())[0]
-    product_price_dict_keys = list(product_price_dict.keys())
-    print('product_price_dict_keys :', product_price_dict_keys) # ['2021-01-01', '2021-02-01', '2021-03-01']
-    print(product_price_dict[product_price_dict_keys[0]]) # [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]]
-    for price_list in product_price_dict[product_price_dict_keys[0]]:
-        print(price_list[0]) # bank
-        print(price_list[1]) # 1269.0
+    input_money_ratio=list()
+    for i in strategy_ratio:
+        input_money_ratio.append(i*input_money//100)
+
+
+    # 전략별로 돌면서 실행
+    for i,money in enumerate(input_money_ratio):
+        stratgy_key = list(portfolio_product_count[i].keys())[0]
+        product_price_dict = list(portfolio_product_count[i].values())[0]
+        product_price_dict_keys = list(product_price_dict.keys())
+        for product_price_dict_key in product_price_dict_keys:
+            price_lists=product_price_dict[product_price_dict_key] # [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]] 
+            money_to_price_list = money//len(price_lists)
+            for price_list in price_lists:
+                price_list[1] = int(money_to_price_list // price_list[1])
+    
+    return portfolio_product_count
     
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
     # 포트폴리오 생성 예시
-    portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',20000)
+    portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',200000)
     strategy_1=Strategy('PER 저',3,'20220101','20220501')
     strategy_2=Strategy('PER 고',2,'20220101','20220501')
     

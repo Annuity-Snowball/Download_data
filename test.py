@@ -1,19 +1,49 @@
-result=list()
-for interval_date in range(2000,2100):
+input_money = 300000
+stratgy_ratio=[40,60]
+portfolio_product_count=[{'PER 저': {'2021-01-01': [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]], '2021-02-01': [['bank', 1853.0], ['kospi', 26166.0], ['energy', 4145.0]], '2021-03-01': [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]]}}, {'PER 고': {'2021-01-01': [['china', 5248.0], ['spy', 26202.0]], '2021-02-01': [['china', 7087.0], ['bio', 24193.0]], '2021-03-01': [['china', 5952.0], ['bio', 12482.0]]}}]
 
-    # get_stratgy_price_query 는 전략종류에 따라서 가져온 금융상품의 정보(금융상품티커) 을 가져오는 쿼리
-    get_product_ticker_query='select product_date,product_ticker from product_evaluate order by per asc limit 3'.split(' ')
-    get_product_ticker_query.insert(4,"where product_date = '"+str(interval_date)+"'") # str(20200101) 은 interval_dates들을 반복문으로 대입
-    get_product_ticker_query=" ".join(get_product_ticker_query)
+input_money_ratio=list()
+for i in stratgy_ratio:
+    input_money_ratio.append(i*input_money//100)
 
-    print('get_product_ticker_query :',get_product_ticker_query)
+print('input_money_ratio :',input_money_ratio)
+
+'''
+# stratgy_keys = list(portfolio_product_price[i].keys())[0] -> i를 변경시키면서 '현금', 'PER 저' 등 가져올수 있음!
+# product_price_dict = list(portfolio_product_price[i].values())[0] -> i를 변경시기면서 {'2021-01-01': [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]], '2021-02-01': [['bank', 1853.0], ['kospi', 26166.0], ['energy', 4145.0]], '2021-03-01': [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]]}
+# product_price_dict_keys = list(product_price_dict.keys()) -> ['2021-01-01', '2021-02-01', '2021-03-01']
+product_price_dict=list(portfolio_product_count[0].values())[0] # {'2021-01-01': [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]], '2021-02-01': [['bank', 1853.0], ['kospi', 26166.0], ['energy', 4145.0]], '2021-03-01': [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]]}
+product_price_dict_keys = list(product_price_dict.keys()) # ['2021-01-01', '2021-02-01', '2021-03-01']
+print(product_price_dict[product_price_dict_keys[0]]) # [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]]
+for price_list in product_price_dict[product_price_dict_keys[0]]:
+    print(price_list[0]) # bank
+    print(price_list[1]) # 1269.0
+'''
+
+
+print('before portfolio_product_count', portfolio_product_count)
+# 전략별로 돌면서 실행
+for i,money in enumerate(input_money_ratio):
+    stratgy_key = list(portfolio_product_count[i].keys())[0]
+    product_price_dict = list(portfolio_product_count[i].values())[0]
+    product_price_dict_keys = list(product_price_dict.keys())
+    print('stratgy_key :', stratgy_key)
+    print('product_price_dict :', product_price_dict)
+    print('product_price_dict_keys :', product_price_dict_keys)
+    print('money :', money)
+    print()
+    for product_price_dict_key in product_price_dict_keys:
+        print('money2 :',money)
+        price_lists=product_price_dict[product_price_dict_key] # [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]] 
+        print('price_lists :', price_lists)
+        money_to_price_list = money//len(price_lists)
+        print('money_to_price_list :',money_to_price_list)
+        for price_list in price_lists:
+            price_list[1] = int(money_to_price_list // price_list[1])
+            print('price_list', price_list)
+    print('after product_price_dict :', product_price_dict)
     
-    # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
-    snowball.execute(get_product_ticker_query) 
     
-    # sql 결과값들로 조회한 값들을 anwers에 담음
-    answers=list(snowball.fetchall())
-    for i in range(len(answers)):
-        answers[i] = list(answers[i])
-        answers[i][0] = str(answers[i][0])
-    result.append(answers)
+    print()
+
+print('after portfolio_product_count', portfolio_product_count)
