@@ -155,8 +155,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
     # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
-    portfolio_info = makePortfolioInfo(sql_queries, strategy_kinds,['2021-01-01','2021-02-01','2021-03-01'])
-    print(portfolio_info)
+    portfolio_product_price = getPortfolioProductPrice(sql_queries, strategy_kinds,['2021-01-01','2021-02-01','2021-03-01'])
+    print(portfolio_product_price)
     # makePortfolioHistory(portfolio_info)
     pass
     
@@ -234,7 +234,7 @@ def getProductPrice(product_date,product_ticker):
     return result
   
 # 포트폴리오의 정보(담은 금융상품의 조회 금액)들 만드는 함수 - 
-def makePortfolioInfo(sql_queries,strategy_kinds,date_list):
+def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
     """
     1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
     2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
@@ -245,8 +245,8 @@ def makePortfolioInfo(sql_queries,strategy_kinds,date_list):
         strategy_kinds (list): 전략 종류들이 담겨 있는 리스트
 
     """
-    portfolio_info = list()
-    portfolio_info.append({'현금':[]})
+    portfolio_product_price = list()
+    portfolio_product_price.append({'현금':[]})
     # 전략 별로 for 문이 돈다
     for i,sql_query in enumerate(sql_queries):
         # print()
@@ -286,9 +286,9 @@ def makePortfolioInfo(sql_queries,strategy_kinds,date_list):
         
         
         # 이 부분을 통해서 for 문을 돌면서 '전략1','전략2' 등 전략들이 다 추가가 된다!
-        portfolio_info.append(strategy_dict)
+        portfolio_product_price.append(strategy_dict)
     
-    return portfolio_info
+    return portfolio_product_price
 
 # 포트리오의 계좌(시간 별로 담은 금융상품의 개수들)
 def makePortfolioHistory(portfolio_info,input_money,stratgy_ratio):
