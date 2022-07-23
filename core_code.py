@@ -1,7 +1,6 @@
 from datetime import date, timedelta
 import pymysql
-
-
+import copy
 
 # 포트폴리오 클래스 생성
 class Portfolio():
@@ -156,8 +155,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
     # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
-    portfolio_info = makePortfolioInfo(sql_queries, strategy_kinds)
+    portfolio_info = makePortfolioInfo(sql_queries, strategy_kinds,['2021-01-01','2021-02-01','2021-03-01'])
     print(portfolio_info)
+    # makePortfolioHistory(portfolio_info)
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
@@ -233,8 +233,8 @@ def getProductPrice(product_date,product_ticker):
     # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
     return result
   
-# 포트폴리오 계좌 만드는 함수 - 
-def makePortfolioInfo(sql_queries,strategy_kinds):
+# 포트폴리오의 정보(담은 금융상품의 조회 금액)들 만드는 함수 - 
+def makePortfolioInfo(sql_queries,strategy_kinds,date_list):
     """
     1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
     2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
@@ -246,7 +246,7 @@ def makePortfolioInfo(sql_queries,strategy_kinds):
 
     """
     portfolio_info = list()
-    
+    portfolio_info.append({'현금':[]})
     # 전략 별로 for 문이 돈다
     for i,sql_query in enumerate(sql_queries):
         # print()
@@ -257,7 +257,7 @@ def makePortfolioInfo(sql_queries,strategy_kinds):
         #  [['2021-02-01', 'bank'], ['2021-02-01', 'kospi'], ['2021-02-01', 'energy']], 
         #  [['2021-03-01', 'bank'], ['2021-03-01', 'kospi'], ['2021-03-01', 'energy']]
         # ]
-        product_ticker_infos = getProductTicker(sql_query,['2021-01-01','2021-02-01','2021-03-01'])
+        product_ticker_infos = getProductTicker(sql_query,date_list)
         # print("product_ticker_infos: " ,product_ticker_infos)
         
         strategy_dict=dict() # key가 '전략1'등인 딕셔너리
@@ -290,6 +290,24 @@ def makePortfolioInfo(sql_queries,strategy_kinds):
     
     return portfolio_info
 
+# 포트리오의 계좌(시간 별로 담은 금융상품의 개수들)
+def makePortfolioHistory(portfolio_info,input_money,stratgy_ratio):
+    
+    # 복사를 통해서 portfolio_history 생성
+    portfolio_history=copy.deepcopy(portfolio_info)
+    
+    # stratgy_keys = list(portfolio_info[i].keys())[0] -> i를 변경시키면서 '현금', 'PER 저' 등 가져올수 있음!
+    # product_price_dict = list(portfolio_info[i].values())[0] -> i를 변경시기면서 {'2021-01-01': [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]], '2021-02-01': [['bank', 1853.0], ['kospi', 26166.0], ['energy', 4145.0]], '2021-03-01': [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]]}
+    # product_price_dict_keys = list(product_price_dict.keys()) -> ['2021-01-01', '2021-02-01', '2021-03-01']
+    print("makePortfolioHistory")
+    product_price_dict=list(portfolio_info[1].values())[0]
+    product_price_dict_keys = list(product_price_dict.keys())
+    print('product_price_dict_keys :', product_price_dict_keys) # ['2021-01-01', '2021-02-01', '2021-03-01']
+    print(product_price_dict[product_price_dict_keys[0]]) # [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]]
+    for price_list in product_price_dict[product_price_dict_keys[0]]:
+        print(price_list[0]) # bank
+        print(price_list[1]) # 1269.0
+    
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
     # 포트폴리오 생성 예시
