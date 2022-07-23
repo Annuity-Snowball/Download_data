@@ -240,7 +240,7 @@ def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
     2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
 
     Args:
-        portfolio_info (list): 포트폴리오계좌
+        portfolio_product_price (list): 포트폴리오계좌
         sql_queries (list): 쿼리문들이 담겨있는 리스트
         strategy_kinds (list): 전략 종류들이 담겨 있는 리스트
 
