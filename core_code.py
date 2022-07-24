@@ -152,13 +152,15 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     rebalance_date_list = list()
     
-    test_rebalance_date_list=['2021-01-01','2021-03-01']
-    input_money_list = [1000000,2000000]
+    test_rebalance_date_list='2021-01-01'
+    rebalance_input_money = 1000000
     
     test_input_date_list=['2021-01-01','2021-02-01','2021-03-01','2021-04-01']
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
     # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
     
+    
+    # 리밸런싱 -> 리밸런싱 다음달 부터 리밸런싱때 금융상품들로 주기적납부 -> 리밸런싱
     
     print("==================================")
     portfolio_product_price=getPortfolioProductPrice(sql_queries, strategy_kinds,test_input_date_list)
@@ -173,7 +175,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(sql_queries, strategy_kinds,test_rebalance_date_list)
     print(portfolio_rebalance_product_price)
     print("==================================")
-    rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,input_money_list,strategy_ratio)
+    rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_money,strategy_ratio)
     print(rebalance_balance_account)
     print(portfolio_rebalance_product_count)
     print("==================================")
@@ -291,7 +293,6 @@ def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
             for j,temp in enumerate(product_ticker_info):
                 temp[1]=backtest_tickers[j]
         
-        
         # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
         for product_ticker_info in product_ticker_infos:
             # print("product_ticker_info :",product_ticker_info)
@@ -303,12 +304,12 @@ def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
                 # ex) product_price_info = ['china', 5952.0]
                 product_price_info=getProductPrice(product_date,product_ticker)
                 # print('product_price_info :',product_price_info)
-                
-                # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
-                if product_date in product_dict:
-                    product_dict[product_date].append(product_price_info)
-                else:
-                    product_dict[product_date] = [product_price_info]
+                if product_date != date_list[0]:
+                    # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
+                    if product_date in product_dict:
+                        product_dict[product_date].append(product_price_info)
+                    else:
+                        product_dict[product_date] = [product_price_info]
                     
         
         strategy_dict[strategy_kinds[i]]=product_dict # key가 '전략1'등인 딕셔너리 추가
@@ -364,7 +365,7 @@ def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
     return input_balance_account,portfolio_product_count
 
 # 리밸런싱 하는 날에 새로 구매할 금융상품들과 가격을 반환 - 리밸런싱 날짜들을 받자
-def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,date_list):
+def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,rebalance_date):
     """
     1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
     2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
@@ -386,7 +387,7 @@ def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,date_list):
         #  [['2021-02-01', 'bank'], ['2021-02-01', 'kospi'], ['2021-02-01', 'energy']], 
         #  [['2021-03-01', 'bank'], ['2021-03-01', 'kospi'], ['2021-03-01', 'energy']]
         # ]
-        product_ticker_infos = getProductTicker(sql_query,date_list)
+        product_ticker_infos = getProductTicker(sql_query,[rebalance_date])
         # print("product_ticker_infos: " ,product_ticker_infos)
         
         strategy_dict=dict() # key가 '전략1'등인 딕셔너리
@@ -420,7 +421,7 @@ def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,date_list):
     return portfolio_rebalance_product_price
 
 # 리밸런싱 하는 날들에 새로 구매한 금융상품들과 그 개수를 반환, 잔액도 반환 - 리밸런싱에 사용
-def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,input_money_list,strategy_ratio):
+def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_money,strategy_ratio):
     
     
     # 여기에 리밸런싱 날짜 사이에 상품들 가격 구하고 계좌에 더하는 함수 구현 - input_money_list 대신에서 넣어야 함 format - [100000,200000,300000]
@@ -431,35 +432,32 @@ def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,input_money_list
     
 
     rebalance_balance_account=dict()
+    input_money_ratio=list()
+    for amount in strategy_ratio:
+        input_money_ratio.append(amount*rebalance_input_money//100)
 
-    input_money_ratio_list=[[] for _ in range(len(input_money_list))]
-
-    for i,input_money in enumerate(input_money_list):
-        for amount in strategy_ratio:
-            input_money_ratio_list[i].append(amount*input_money//100)
-
-    # print(input_money_ratio_list)
+    # print('input_money_ratio :',input_money_ratio)
     
-    for i,input_money_ratio in enumerate(input_money_ratio_list): # input_money_ratio_list 는 [[400000, 600000], [800000, 1200000], [1200000, 1800000]] 
+    # for i,input_money_ratio in enumerate(input_money_ratio_list): # input_money_ratio_list 는 [[400000, 600000], [800000, 1200000], [1200000, 1800000]] 
         #전략별로 반복
-        for j,strategy_kind_money in enumerate(input_money_ratio): # input_money_ratio 는 ex) [400000, 600000], strategy_kind_money는 한 전략을 구입할 금액
-            product_price_dict = list(portfolio_rebalance_product_count[j].values())[0]
-            product_price_dict_keys = list(product_price_dict.keys()) # ['2021-01-01', '2021-07-01', '2022-01-01']
-            price_lists=product_price_dict[product_price_dict_keys[i]]
+    for j,strategy_kind_money in enumerate(input_money_ratio): # input_money_ratio 는 ex) [400000, 600000], strategy_kind_money는 한 전략을 구입할 금액
+        product_price_dict = list(portfolio_rebalance_product_count[j].values())[0]
+        product_price_dict_keys = list(product_price_dict.keys()) # ['2021-01-01', '2021-07-01', '2022-01-01']
+        price_lists=product_price_dict[product_price_dict_keys[0]]
+        
+        if j ==0:
+            rebalance_balance_account[product_price_dict_keys[0]]=0
             
-            if j ==0:
-                rebalance_balance_account[product_price_dict_keys[i]]=0
-                
-            # print('strategy_kind_money :', strategy_kind_money)
-            # print('price_lists :', price_lists)
-            strategy_product_money = int(strategy_kind_money // len(price_lists)) # strategy_product_money 는 전략에 해당하는 금융상품들중 한 금융상품을 구입할 금액
-            # print('strategy_product_money :', strategy_product_money)
-            # print('before balance_account : ',balance_account)
-            for price_list in price_lists:
-                # print('price_list[1] :',price_list[1])
-                rebalance_balance_account[product_price_dict_keys[i]] += strategy_product_money%price_list[1]
-                # print('after balance_account : ',balance_account)
-                price_list[1] = int(strategy_product_money//price_list[1])
+        # print('strategy_kind_money :', strategy_kind_money)
+        # print('price_lists :', price_lists)
+        strategy_product_money = int(strategy_kind_money // len(price_lists)) # strategy_product_money 는 전략에 해당하는 금융상품들중 한 금융상품을 구입할 금액
+        # print('strategy_product_money :', strategy_product_money)
+        # print('before balance_account : ',balance_account)
+        for price_list in price_lists:
+            # print('price_list[1] :',price_list[1])
+            rebalance_balance_account[product_price_dict_keys[0]] += strategy_product_money%price_list[1]
+            # print('after balance_account : ',balance_account)
+            price_list[1] = int(strategy_product_money//price_list[1])
                 
             # print('after price_lists :', price_lists)
             # print()
