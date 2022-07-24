@@ -152,29 +152,31 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     rebalance_date_list = list()
     
-    test_rebalance_date_list=['2021-01-01','2021-07-01','2022-01-01']
+    test_rebalance_date_list=['2021-01-01','2021-03-01']
+    input_money_list = [1000000,2000000]
+    
     test_input_date_list=['2021-01-01','2021-02-01','2021-03-01','2021-04-01']
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
     # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
     
-    portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(sql_queries, strategy_kinds,test_rebalance_date_list)
-    print(portfolio_rebalance_product_price)
     
     print("==================================")
     portfolio_product_price=getPortfolioProductPrice(sql_queries, strategy_kinds,test_input_date_list)
     print(portfolio_product_price)
-    print("==================================")
     print("==================================")
     print('input_money :', input_money)
     input_balance_account,portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
     print(input_balance_account)
     print(portfolio_product_count)
     print("==================================")
-    
-    input_money_list = [1000000,2000000,3000000]
+    print("==================================")
+    portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(sql_queries, strategy_kinds,test_rebalance_date_list)
+    print(portfolio_rebalance_product_price)
+    print("==================================")
     rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,input_money_list,strategy_ratio)
     print(rebalance_balance_account)
     print(portfolio_rebalance_product_count)
+    print("==================================")
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
@@ -417,7 +419,7 @@ def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,date_list):
     
     return portfolio_rebalance_product_price
 
-# 리밸런싱 하는 날에 새로 구매한 금융상품들과 그 개수를 반환, 잔액도 반환 - 리밸런싱에 사용
+# 리밸런싱 하는 날들에 새로 구매한 금융상품들과 그 개수를 반환, 잔액도 반환 - 리밸런싱에 사용
 def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,input_money_list,strategy_ratio):
     
     
