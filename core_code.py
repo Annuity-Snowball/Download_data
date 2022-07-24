@@ -149,15 +149,22 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     # 1-1. 납입하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     input_date_list = list()
-    
     # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     rebalance_date_list = list()
     
+    test_input_date_list=['2021-01-01','2021-07-01','2022-01-01']
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
     # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
-    portfolio_product_price = getPortfolioProductPrice(sql_queries, strategy_kinds,['2021-01-01','2021-02-01','2021-03-01'])
-    print(portfolio_product_price)
-    portfolio_product_count = getPortfolioProductCount(portfolio_product_price,input_money,strategy_ratio)
+    
+    portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(sql_queries, strategy_kinds,test_input_date_list)
+    print(portfolio_rebalance_product_price)
+    
+    # 여기에 리밸런싱 날짜 사이에 상품들 가격 구하고 계좌에 더하는 함수 구현
+    
+    
+    input_money_list = [1000000,2000000,3000000]
+    balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,input_money_list,strategy_ratio)
+    print(balance_account)
     print(portfolio_product_count)
     pass
     
@@ -167,7 +174,7 @@ def getDateInfo(start_date,end_date,interval):
     
     pass
  
-# 해당날짜들에 대응하는 금융상품들 정보 반환하는 함수
+# 해당날짜들에 대응하는 금융상품들 정보 반환하는 함수 - 리밸런싱 날짜들을 받자!
 def getProductTicker(sql_query,interval_dates):
     """
     
@@ -234,8 +241,8 @@ def getProductPrice(product_date,product_ticker):
     # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
     return result
   
-# 포트폴리오의 정보(담은 금융상품의 조회 금액)들 만드는 함수 - 
-def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
+# 포트폴리오의 정보(담은 금융상품의 조회 금액)들 만드는 함수 - 리밸런싱 날짜들을 받자
+def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,date_list):
     """
     1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
     2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
@@ -290,13 +297,13 @@ def getPortfolioProductPrice(sql_queries,strategy_kinds,date_list):
     
     return portfolio_product_price
 
-# 포트리오의 계좌(시간 별로 새로 담은 금융상품의 개수들) - ing
+# 포트리오의 계좌(시간 별로 새로 납입한 금액으로 구입한 금융상품의 개수들) - 고정납입금액에 사용
 def getPortfolioProductCount(portfolio_product_price,input_money,strategy_ratio):
     """_summary_
 
     Args:
         portfolio_product_price (dict): _description_
-        input_money (int): _description_
+        input_money (int): 리밸런싱할때마다의 계좌에 있는 금액을 새로 넣어주면 되ㄹ듯!
         stratgy_ratio (list): _description_
     """
     
@@ -310,7 +317,6 @@ def getPortfolioProductCount(portfolio_product_price,input_money,strategy_ratio)
 
     # 전략별로 돌면서 실행
     for i,money in enumerate(input_money_ratio):
-        stratgy_key = list(portfolio_product_count[i].keys())[0]
         product_price_dict = list(portfolio_product_count[i].values())[0]
         product_price_dict_keys = list(product_price_dict.keys())
         for product_price_dict_key in product_price_dict_keys:
@@ -320,7 +326,49 @@ def getPortfolioProductCount(portfolio_product_price,input_money,strategy_ratio)
                 price_list[1] = int(money_to_price_list // price_list[1])
     
     return portfolio_product_count
+  
+# 포트리오의 계좌(리밸런싱한 날의 구매한 금융상품들 개수와, 잔액 현황 반환) - 리밸런싱에 사용
+def getPortfolioRabalanceInfo(portfolio_product_price,input_money_list,strategy_ratio):
     
+    portfolio_product_count=copy.deepcopy(portfolio_product_price)
+    
+
+    balance_account=dict()
+
+    input_money_ratio_list=[[] for _ in range(len(input_money_list))]
+
+    for i,input_money in enumerate(input_money_list):
+        for amount in strategy_ratio:
+            input_money_ratio_list[i].append(amount*input_money//100)
+
+    print(input_money_ratio_list)
+    
+    for i,input_money_ratio in enumerate(input_money_ratio_list): # input_money_ratio_list 는 [[400000, 600000], [800000, 1200000], [1200000, 1800000]] 
+        #전략별로 반복
+        for j,strategy_kind_money in enumerate(input_money_ratio): # input_money_ratio 는 ex) [400000, 600000], strategy_kind_money는 한 전략을 구입할 금액
+            product_price_dict = list(portfolio_product_count[j].values())[0]
+            product_price_dict_keys = list(product_price_dict.keys()) # ['2021-01-01', '2021-07-01', '2022-01-01']
+            price_lists=product_price_dict[product_price_dict_keys[i]]
+            
+            if j ==0:
+                balance_account[product_price_dict_keys[i]]=0
+                
+            # print('strategy_kind_money :', strategy_kind_money)
+            # print('price_lists :', price_lists)
+            strategy_product_money = int(strategy_kind_money // len(price_lists)) # strategy_product_money 는 전략에 해당하는 금융상품들중 한 금융상품을 구입할 금액
+            # print('strategy_product_money :', strategy_product_money)
+            # print('before balance_account : ',balance_account)
+            for price_list in price_lists:
+                # print('price_list[1] :',price_list[1])
+                balance_account[product_price_dict_keys[i]] += strategy_product_money%price_list[1]
+                # print('after balance_account : ',balance_account)
+                price_list[1] = int(strategy_product_money//price_list[1])
+                
+            # print('after price_lists :', price_lists)
+            # print()
+  
+    return balance_account, portfolio_product_count
+
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
     # 포트폴리오 생성 예시
