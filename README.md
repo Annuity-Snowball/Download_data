@@ -6,3 +6,6 @@
 - chrome 드라이버는 103 버전을 사용해야 합니다
 - 나머지 코드 실행에 필요한 라이브러리 들은 'pip install' 을 이용해서 설치를 한 후 사용을 해야 합니다
 - 코드 실행시, 경로 등은 pc 맞춰서 수정을 해야 합니다
+
+- 데이터베이스에서 값들을 입력 받을 시 db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 에서 passwd와 db를 본인 pc에 맞게 수정해야 합니다
+- make_database_tables.py  ->  update_prices_database.py  ->  update_product_evaluate_database.py 순으로 실행을 하면 됩니다
