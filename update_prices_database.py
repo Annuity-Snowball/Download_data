@@ -28,7 +28,7 @@ snowball=db.cursor()
 for date_list in date_lists:
         for product_list in product_lists:
                 # 4. SQL 구문 만들기 (CRUD SQL 구문 등) - 따옴표를 이용해서 긴 한줄을 여러줄로 표현 
-                num = random.randrange(10000,100000)
+                num = random.randrange(10000,20000)
                 sql = """
                         INSERT INTO price_"""+product_list+""" (product_date, high_price, low_price, start_price, end_price) VALUES
                         ('"""+date_list+"""', """+str(num)+""", """+str(num)+""", """+str(num)+""", """+str(num)+"""); 

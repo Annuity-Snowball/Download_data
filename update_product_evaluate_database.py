@@ -20,36 +20,7 @@ for i in range(900):
     date += datetime.timedelta(days=1)
     date_lists.append(str(date).split()[0])
  
-# # 날짜별 per 리스트 확인
-# for i in range(900):
-#         num = random.uniform(12, 20)
-#         num = round(num,2)
-#         per_list.append(num)
-
-# # 날짜별 pbr 리스트 확인
-# for i in range(900):
-#         num = random.uniform(1, 2)
-#         num = round(num,2)
-#         pbr_list.append(num)
-
-# # 날짜별 roe 리스트 확인
-# for i in range(900):
-#         num = random.uniform(15, 25)
-#         num = round(num,2)
-#         roe_list.append(num)
-
-# # 날짜별 operating_to_revenue_ratio_list 리스트 확인
-# for i in range(900):
-#         num = random.uniform(0.2, 0.3)
-#         num = round(num,2)
-#         operating_to_revenue_ratio_list.append(num)
-
-# # 날짜별 liabilities_to_assets_ratio_list 리스트 확인
-# for i in range(900):
-#         num = random.uniform(30, 40)
-#         num = round(num,2)
-#         liabilities_to_assets_ratio_list.append(num)
-        
+    
         
 product_lists = ['bank','bio','china','energy','euro','kospi','qqq','spy']
 
