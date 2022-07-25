@@ -152,33 +152,56 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
     rebalance_date_list = list()
     
-    test_rebalance_date_list='2021-01-01'
-    rebalance_input_money = 1000000
+    test_start_rebalance_dates=['2021-01-01','2021-04-01']
+    test_start_rebalance_input_money = 1000000
     
-    test_input_date_list=['2021-01-01','2021-02-01','2021-03-01','2021-04-01']
+    test_input_date_lists=[['2021-01-01','2021-02-01','2021-03-01'],['2021-04-01','2021-05-01','2021-06-01']]
     # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
     # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
     
+    # print(strategy_kinds) # ['PER 저', 'PER 고']
     
-    # 리밸런싱 -> 리밸런싱 다음달 부터 리밸런싱때 금융상품들로 주기적납부 -> 리밸런싱
+    # 날짜 별로 새로 남은 잔액들 히스토리
+    total_balance_account=dict()
     
-    print("==================================")
-    portfolio_product_price=getPortfolioProductPrice(sql_queries, strategy_kinds,test_input_date_list)
-    print(portfolio_product_price)
-    print("==================================")
-    print('input_money :', input_money)
-    input_balance_account,portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
-    print(input_balance_account)
-    print(portfolio_product_count)
-    print("==================================")
-    print("==================================")
-    portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(sql_queries, strategy_kinds,test_rebalance_date_list)
-    print(portfolio_rebalance_product_price)
-    print("==================================")
-    rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_money,strategy_ratio)
-    print(rebalance_balance_account)
-    print(portfolio_rebalance_product_count)
-    print("==================================")
+    total_portfolio_account = None
+    
+    # a날짜 리밸런싱 -> a날 다음달 부터 a날 리밸런싱때 금융상품들로 주기적납부 -> b날 납부 -> b날 리밸런싱 ->  b날 다음달 부터 b날 리밸런싱때 금융상품들로 주기적납부
+    
+    for i,test_start_rebalance_date in enumerate(test_start_rebalance_dates):
+        
+        if i ==0:
+            balance_amount=0
+        
+        print(test_start_rebalance_date, "리밸런싱")
+        print("==================================")
+        portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(sql_queries, strategy_kinds,test_start_rebalance_date)
+        # print(portfolio_rebalance_product_price)
+        rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,test_start_rebalance_input_money,strategy_ratio)
+        print("리밸런싱 후 잔액 :", rebalance_balance_account)
+        print('리밸런싱 후 계좌상황 :', portfolio_rebalance_product_count)
+        
+        # 
+        total_balance_account[test_start_rebalance_date]=rebalance_balance_account[test_start_rebalance_date]
+        
+        # 기간 잔액 총액 balance_amount
+        balance_amount+=total_balance_account[test_start_rebalance_date]
+        print("==================================")
+        print("사이 기간동안 납부")
+        print("==================================")
+        portfolio_product_price=getPortfolioProductPrice(sql_queries, strategy_kinds,test_input_date_lists[i])
+        # print(portfolio_product_price)
+        # print('input_money :', input_money)
+        input_balance_account,portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
+        print('납부때마다 추가되는 잔액 :',input_balance_account)
+        print('납부때마다 추가되는 계좌상황 :',portfolio_product_count)
+        for input_balance_account_key in input_balance_account.keys():
+            total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
+            balance_amount+=total_balance_account[input_balance_account_key]
+        print('balance_amount :',balance_amount)
+        print("==================================")
+    print('계좌잔액 결과', total_balance_account)
+
     pass
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
