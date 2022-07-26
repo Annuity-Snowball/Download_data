@@ -164,7 +164,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     # 날짜 별로 새로 남은 잔액들 히스토리
     total_balance_account=dict()
     
-    total_portfolio_account = None
+    total_portfolio_account = dict()
     
     balance_amount = 0
     
@@ -188,6 +188,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
         
         portfolio_rebalance_strategy_value=getPortfolioStrategyValue(portfolio_rebalance_product_value)
         print('리밸런싱 후 전략별 가치 :',portfolio_rebalance_strategy_value)
+        
+        portfolio_rebalance_value=getPortfolioValue(portfolio_rebalance_strategy_value)
+        print('리밸런싱 후 포트폴리오 가치(잔액포함0) :',portfolio_rebalance_value)
         
         total_balance_account[test_start_rebalance_date] = rebalance_balance_account[test_start_rebalance_date]
         print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
@@ -213,6 +216,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
         portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
         print('납부때마다 전략별 가치 :',portfolio_strategy_value)
         
+        portfolio_value=getPortfolioValue(portfolio_strategy_value)
+        print('납입한 후 포트폴리오 가치(잔액포함X?) :',portfolio_value)
+        
         for input_balance_account_key in input_balance_account:
             total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
         print(str(i+1)+'번 사이클 돈 후 잔액기록 :',total_balance_account)
@@ -221,7 +227,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
             balance_amount+=total_balance_account[input_balance_account_key]
         print('한 사이클 돈 후 잔액 총합 :',balance_amount)
-        
+     
 
     pass
     
@@ -543,7 +549,23 @@ def getPortfolioStrategyValue(product_value):
     
     return(product_value)
 
+# 포트폴리오 내 가치반환(잔액포함X?)
+def getPortfolioValue(portfolio_strategy_value):
+    portfolio_value=dict()
 
+    # 전략별로 반복
+    for i in range(len(portfolio_strategy_value)):
+        price_strategy_key=list(portfolio_strategy_value[i].keys())[0]
+        price_strategy_value=portfolio_strategy_value[i][price_strategy_key]
+        strategy_value_keys=list(price_strategy_value.keys()) # strategy_value_keys 는 '2021-05-01' 등 날짜들
+        
+        
+        for strategy_value_key in strategy_value_keys:
+            if strategy_value_key in portfolio_value:
+                portfolio_value[strategy_value_key]+=price_strategy_value[strategy_value_key]
+            else:
+                portfolio_value[strategy_value_key]=price_strategy_value[strategy_value_key]
+    return(portfolio_value)
 
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
