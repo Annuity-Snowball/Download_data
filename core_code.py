@@ -166,41 +166,56 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     total_portfolio_account = None
     
+    balance_amount = 0
+    
     # a날짜 리밸런싱 -> a날 다음달 부터 a날 리밸런싱때 금융상품들로 주기적납부 -> b날 납부 -> b날 리밸런싱 ->  b날 다음달 부터 b날 리밸런싱때 금융상품들로 주기적납부
     
     for i,test_start_rebalance_date in enumerate(test_start_rebalance_dates):
         
-        if i ==0:
-            balance_amount=0
-        
+        print("==================================")
         print(test_start_rebalance_date, "리밸런싱")
         print("==================================")
         portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(sql_queries, strategy_kinds,test_start_rebalance_date)
-        # print(portfolio_rebalance_product_price)
-        rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,test_start_rebalance_input_money,strategy_ratio)
+        print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_rebalance_product_price)
+        print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount)
+        
+        rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio)
+        print('리밸런싱 후 금융상품들 개수 :', portfolio_rebalance_product_count)
         print("리밸런싱 후 잔액 :", rebalance_balance_account)
-        print('리밸런싱 후 계좌상황 :', portfolio_rebalance_product_count)
         
-        # 
-        total_balance_account[test_start_rebalance_date]=rebalance_balance_account[test_start_rebalance_date]
+        portfolio_rebalance_product_value=getPortfolioProductValue(portfolio_rebalance_product_price,portfolio_rebalance_product_count)
+        print('리밸런싱 후 금융상품들 가치 :',portfolio_rebalance_product_value)
         
-        # 기간 잔액 총액 balance_amount
+        total_balance_account[test_start_rebalance_date] = rebalance_balance_account[test_start_rebalance_date]
+        print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
+        print()
+        
+        # 리밸런싱 할 때 마다 잔액 총합을 초기화 ->  리밸런싱하면 잔액총합이 0이됨
+        balance_amount=0
+        # 리밸런싱 하고 나서 나온 잔액을 잔액총합에 더함
         balance_amount+=total_balance_account[test_start_rebalance_date]
-        print("==================================")
-        print("사이 기간동안 납부")
-        print("==================================")
+        
+        
         portfolio_product_price=getPortfolioProductPrice(sql_queries, strategy_kinds,test_input_date_lists[i])
-        # print(portfolio_product_price)
-        # print('input_money :', input_money)
+        print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
+        print('주기적 납부하는 돈 :', input_money)
+        
         input_balance_account,portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
+        print('납부때마다 추가되는 금융상품 개수 :',portfolio_product_count)
         print('납부때마다 추가되는 잔액 :',input_balance_account)
-        print('납부때마다 추가되는 계좌상황 :',portfolio_product_count)
+        
+        portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
+        print('납부때마다 금융상품들 가치 :',portfolio_product_value)
+        
+        for input_balance_account_key in input_balance_account:
+            total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
+        print(str(i+1)+'번 사이클 돈 후 잔액기록 :',total_balance_account)
+        
         for input_balance_account_key in input_balance_account.keys():
             total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
             balance_amount+=total_balance_account[input_balance_account_key]
-        print('balance_amount :',balance_amount)
-        print("==================================")
-    print('계좌잔액 결과', total_balance_account)
+        print('한 사이클 돈 후 잔액 총합 :',balance_amount)
+        
 
     pass
     
@@ -488,10 +503,32 @@ def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_
     # 일자별 잔액현황하고, 일자별 포트폴리오의 금융상품 개수들 반환
     return rebalance_balance_account, portfolio_rebalance_product_count
 
+# 포트폴리오 내 새로 구매한 금융상품들 가치 반환
+def getPortfolioProductValue(product_value,product_count):
+    for i in range(len(product_value)):
+        price_strategy_key=list(product_value[i].keys())[0]
+    price_strategy_value=product_value[i][price_strategy_key]
+    strategy_value_keys=list(price_strategy_value.keys())
+    
+    count_strategy_value=product_count[i][price_strategy_key]
+    
+    for strategy_value_key in strategy_value_keys:
+        price_lists=price_strategy_value[strategy_value_key]
+        count_lists=count_strategy_value[strategy_value_key]
+        
+        for i in range(len(price_lists)):
+            price_lists[i][1] = price_lists[i][1] * count_lists[i][1]
+
+    return(product_value)
+
+
+# 포트폴리오 내 누적 금융상품들 가치 반환
+
+
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
     # 포트폴리오 생성 예시
-    portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',200000)
+    portfolio_1=Portfolio('포트폴리오1',2,'20220101','20220501',12,'ML',500000)
     strategy_1=Strategy('PER 저',3,'20220101','20220501')
     strategy_2=Strategy('PER 고',2,'20220101','20220501')
     
