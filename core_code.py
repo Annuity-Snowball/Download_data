@@ -186,6 +186,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
         portfolio_rebalance_product_value=getPortfolioProductValue(portfolio_rebalance_product_price,portfolio_rebalance_product_count)
         print('리밸런싱 후 금융상품들 가치 :',portfolio_rebalance_product_value)
         
+        portfolio_rebalance_strategy_value=getPortfolioStrategyValue(portfolio_rebalance_product_value)
+        print('리밸런싱 후 전략별 가치 :',portfolio_rebalance_strategy_value)
+        
         total_balance_account[test_start_rebalance_date] = rebalance_balance_account[test_start_rebalance_date]
         print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
         print()
@@ -206,6 +209,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
         
         portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
         print('납부때마다 금융상품들 가치 :',portfolio_product_value)
+        
+        portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
+        print('납부때마다 전략별 가치 :',portfolio_strategy_value)
         
         for input_balance_account_key in input_balance_account:
             total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
@@ -507,22 +513,36 @@ def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_
 def getPortfolioProductValue(product_value,product_count):
     for i in range(len(product_value)):
         price_strategy_key=list(product_value[i].keys())[0]
-    price_strategy_value=product_value[i][price_strategy_key]
-    strategy_value_keys=list(price_strategy_value.keys())
-    
-    count_strategy_value=product_count[i][price_strategy_key]
-    
-    for strategy_value_key in strategy_value_keys:
-        price_lists=price_strategy_value[strategy_value_key]
-        count_lists=count_strategy_value[strategy_value_key]
+        price_strategy_value=product_value[i][price_strategy_key]
+        strategy_value_keys=list(price_strategy_value.keys())
         
-        for i in range(len(price_lists)):
-            price_lists[i][1] = price_lists[i][1] * count_lists[i][1]
-
+        count_strategy_value=product_count[i][price_strategy_key]
+        
+        for strategy_value_key in strategy_value_keys:
+            price_lists=price_strategy_value[strategy_value_key]
+            count_lists=count_strategy_value[strategy_value_key]
+            
+            for i in range(len(price_lists)):
+                price_lists[i][1] = price_lists[i][1] * count_lists[i][1]
     return(product_value)
 
+# 포트폴리오 내 전략별 가치 반환
+def getPortfolioStrategyValue(product_value):
+    for i in range(len(product_value)):
+        price_strategy_key=list(product_value[i].keys())[0]
+        price_strategy_value=product_value[i][price_strategy_key]
+        strategy_value_keys=list(price_strategy_value.keys()) # strategy_value_keys 는 '2021-05-01' 등 날짜들
+        
+        
+        for strategy_value_key in strategy_value_keys:
+            sum=0
+            price_lists=price_strategy_value[strategy_value_key]
+            for price_list in price_lists:
+                sum+=price_list[1]
+            price_strategy_value[strategy_value_key] = sum
+    
+    return(product_value)
 
-# 포트폴리오 내 누적 금융상품들 가치 반환
 
 
 # 실행하는 부분이 메인함수이면 실행 
