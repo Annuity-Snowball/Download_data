@@ -220,15 +220,18 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print('주기적 납부하는 돈 :', input_money)
             
             input_balance_account,portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
-            test_product_count=portfolio_product_count
             print('납부때마다 추가되는 금융상품 개수 :',portfolio_product_count)
             print('납부때마다 추가되는 잔액 :',input_balance_account)
             
+            portfolio_product_count = getPortfolioProductAccumulateCount(test_product_count,portfolio_product_count)
+            test_product_count=portfolio_product_count
+            print('누적 금융상품 개수 :',portfolio_product_count)
+            
             portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
-            print('납부때마다 금융상품들 가치 :',portfolio_product_value)
+            print('누적 금융상품들 가치 :',portfolio_product_value)
             
             portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
-            print('납부때마다 전략별 가치 :',portfolio_strategy_value)
+            print('누적 전략별 가치 :',portfolio_strategy_value)
             
             portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
             total_portfolio_account[test_date]=portfolio_rebalance_value[test_date]
@@ -446,6 +449,22 @@ def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
     # 일자별 잔액현황하고, 일자별 포트폴리오의 금융상품 개수들 반환
     return input_balance_account,portfolio_product_count
 
+# 누적되는 금융상품개수 구하는 함수
+def getPortfolioProductAccumulateCount(portfolio_rebalance_product_count,portfolio_product_count):
+    for i in range(len(portfolio_product_count)):
+        product_strategy_key=list(portfolio_product_count[i].keys())[0]
+        product_strategy_value=portfolio_product_count[i][product_strategy_key]
+        product_strategy_value_key=list(product_strategy_value.keys())[0] # strategy_value_keys 는 '2021-05-01' 등 날짜들
+        
+        rebalance_product_strategy_key=list(portfolio_rebalance_product_count[i].keys())[0]
+        rebalance_product_strategy_value=portfolio_rebalance_product_count[i][rebalance_product_strategy_key]
+        rebalance_product_strategy_value_key=list(rebalance_product_strategy_value.keys())[0]
+        
+        for i,product_list in enumerate(product_strategy_value[product_strategy_value_key]):
+            product_list[1]+=rebalance_product_strategy_value[rebalance_product_strategy_value_key][i][1]
+    return portfolio_product_count
+
+
 # 리밸런싱 하는 날에 새로 구매할 금융상품들과 가격을 반환 - 리밸런싱 날짜들을 받자
 def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,rebalance_date):
     """
@@ -578,7 +597,6 @@ def getPortfolioStrategyValue(product_value):
             for price_list in price_lists:
                 sum+=price_list[1]
             price_strategy_value[strategy_value_key] = sum
-    
     return(product_value)
 
 # 포트폴리오 내 가치반환(잔액포함X?)
@@ -599,6 +617,7 @@ def getPortfolioValue(portfolio_strategy_value):
                 portfolio_value[strategy_value_key]=price_strategy_value[strategy_value_key]
     return(portfolio_value)
 
+# 날짜 킷값 변경하는 함수
 def changeDateDictKey(product_count,new_date):
     for i in range(len(product_count)):
         price_strategy_key=list(product_count[i].keys())[0]
