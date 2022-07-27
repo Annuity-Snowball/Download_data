@@ -1,17 +1,8 @@
-portfolio_strategy_value = [{'PER 저': {'2021-05-01': 179820.0, '2021-06-01': 160683.0}}, {'PER 고': {'2021-05-01': 295054.0, '2021-06-01': 289682.0}}]
+product_count=[{'PER 저': {'2021-01-01': [['euro', 11], ['china', 7], ['energy', 7]]}}, {'PER 고': {'2021-01-01': [['qqq', 25], ['spy', 25]]}}]
+new_date='2021-01-15'
 
-portfolio_value=dict()
-
-# 전략별로 반복
-for i in range(len(portfolio_strategy_value)):
-    price_strategy_key=list(portfolio_strategy_value[i].keys())[0]
-    price_strategy_value=portfolio_strategy_value[i][price_strategy_key]
-    strategy_value_keys=list(price_strategy_value.keys()) # strategy_value_keys 는 '2021-05-01' 등 날짜들
-    
-    
-    for strategy_value_key in strategy_value_keys:
-        if strategy_value_key in portfolio_value:
-            portfolio_value[strategy_value_key]+=price_strategy_value[strategy_value_key]
-        else:
-            portfolio_value[strategy_value_key]=price_strategy_value[strategy_value_key]
-print(portfolio_value)
+for i in range(len(product_count)):
+    price_strategy_key=list(product_count[i].keys())[0]
+    price_strategy_value=product_count[i][price_strategy_key]
+    price_strategy_value[new_date]=price_strategy_value.pop(list(price_strategy_value.keys())[0])
+print(product_count)
