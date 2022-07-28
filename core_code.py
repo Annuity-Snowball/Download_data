@@ -176,7 +176,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     # a날짜 리밸런싱 -> a날 다음달 부터 a날 리밸런싱때 금융상품들로 주기적납부 -> b날 납부 -> b날 리밸런싱 ->  b날 다음달 부터 b날 리밸런싱때 금융상품들로 주기적납부
     
-    for test_date in test_dates:
+    for i,test_date in enumerate(test_dates):
         
         if test_date in test_start_rebalance_dates:
             rebalance_date=test_date
@@ -185,6 +185,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print("==================================")
             portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, test_date)
             print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_rebalance_product_price)
+            
+            
             print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount)
             
             rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio)
@@ -237,6 +239,10 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             total_portfolio_account[test_date]=portfolio_rebalance_value[test_date]
             print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
             
+            # 포트폴리오 가치 총합을 갱신
+            test_key = list(total_portfolio_account.keys())[-1]
+            print('test_key :',test_key)
+            test_start_rebalance_input_money=total_portfolio_account[test_key]
             
             for input_balance_account_key in input_balance_account:
                 total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
@@ -249,7 +255,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print()
             
         else:
-            print('rebalnce_date',rebalance_date)
+            # print('rebalnce_date',rebalance_date)
             portfolio_product_price=getPortfolioProductPrice(stratgy_sql_query_list, strategy_kinds,[rebalance_date,test_date])
             print(test_date,'금융상품 가격 :',portfolio_product_price)
             
@@ -265,6 +271,11 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
             total_portfolio_account[test_date]=portfolio_rebalance_value[test_date]
             print(test_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account)
+            
+            # 포트폴리오 가치 총합을 갱신
+            test_key = list(total_portfolio_account.keys())[-1]
+            print('test_key :',test_key)
+            test_start_rebalance_input_money=total_portfolio_account[test_key]
     
     print()
     print('포트폴리오 가치 추이(잔액포함X):',total_portfolio_account)
