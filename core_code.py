@@ -179,6 +179,10 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     for i,test_date in enumerate(test_dates):
         
         if test_date in test_start_rebalance_dates:
+            
+            if test_date in test_input_date_lists:
+                test_start_rebalance_input_money+=input_money
+            
             rebalance_date=test_date
             print("==================================")
             print( test_date, "리밸런싱")
@@ -244,13 +248,10 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print('test_key :',test_key)
             test_start_rebalance_input_money=total_portfolio_account[test_key]
             
-            for input_balance_account_key in input_balance_account:
-                total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
+            total_balance_account=getBalaceAccumulate(input_balance_account,total_balance_account)
             print('누적 후 잔액기록 :',total_balance_account)
             
-            for input_balance_account_key in input_balance_account.keys():
-                total_balance_account[input_balance_account_key] = input_balance_account[input_balance_account_key]
-                balance_amount+=total_balance_account[input_balance_account_key]
+            balance_amount=total_balance_account[list(total_balance_account.keys())[-1]]
             print('납입한 후 리밸런싱 전까지 잔액 총합 :',balance_amount)
             print()
             
@@ -276,6 +277,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             test_key = list(total_portfolio_account.keys())[-1]
             print('test_key :',test_key)
             test_start_rebalance_input_money=total_portfolio_account[test_key]
+            
+            total_balance_account[test_date] = balance_amount
+            print('누적 후 잔액기록 :',total_balance_account)
     
     print()
     print('포트폴리오 가치 추이(잔액포함X):',total_portfolio_account)
@@ -475,7 +479,6 @@ def getPortfolioProductAccumulateCount(portfolio_rebalance_product_count,portfol
             product_list[1]+=rebalance_product_strategy_value[rebalance_product_strategy_value_key][i][1]
     return portfolio_product_count
 
-
 # 리밸런싱 하는 날에 새로 구매할 금융상품들과 가격을 반환 - 리밸런싱 날짜들을 받자
 def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,rebalance_date):
     """
@@ -635,6 +638,14 @@ def changeDateDictKey(product_count,new_date):
         price_strategy_value=product_count[i][price_strategy_key]
         price_strategy_value[new_date]=price_strategy_value.pop(list(price_strategy_value.keys())[0])
     return(product_count)
+
+# 누적되는 잔액계좌 구하는 함수
+def getBalaceAccumulate(input_balance_account,total_balance_account):
+    new_balance_account_key = list(input_balance_account.keys())[0]
+
+    total_balance_account[new_balance_account_key]=total_balance_account[list(total_balance_account.keys())[-1]]+list(input_balance_account.values())[0]
+    
+    return total_balance_account
 
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
