@@ -6,6 +6,7 @@ import pandas as pd
 
 x = ecal.get_calendar("XKRX")  # 한국 증시 코드
 
+
 def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월초 or 월말)
     rtList = []
     if interval == "first":
@@ -33,6 +34,6 @@ def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월�
         return rtList  # 납입 예정일 리스트 출력
 
 
-def dailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든 개장일 반환
-
-    pas
+def getDailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든 개장일 반환
+    a = x.sessions_in_range(start_date, end_date)
+    return a
