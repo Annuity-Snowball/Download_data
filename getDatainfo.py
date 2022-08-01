@@ -37,3 +37,7 @@ def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월�
 def getDailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든 개장일 반환
     a = x.sessions_in_range(start_date, end_date)
     return a
+
+print(getPayInDateInfo("2022-01-01", "2022-12-31", "first"))
+print(getPayInDateInfo("2022-01-01", "2022-12-31", "last"))
+print(getDailyDateInfo("2022-01-01", "2022-01-31"))
