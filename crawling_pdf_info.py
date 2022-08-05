@@ -1,16 +1,15 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
+import math
 
 # 스레드 실행 함수
-def task(name):
-    logging.info("Sub-Thread %s: starting", name)
-    result = 0
-
-    # 스레드에서 구현할 함수?
-    for i in range(10001):
-        result = result + i
-    logging.info("Sub-Thread %s: finishing result: %d", name, result)
+def task(number):
+    logging.info("Sub-Thread %s: starting", number)
+    result=0
+    for i in range(1,number+1):
+        result += i      
+    logging.info("Sub-Thread %s: finishing result: %d", number, result)
 
     # 결과값 반환
     return result
@@ -28,13 +27,14 @@ def main():
     # 실행 방법2
 
     # with context 구문 사용
-
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        tasks = executor.map(task, ['First', 'Second'])
+    start_time = time.time()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        tasks = executor.map(task, [100000000,200000000])
         
         # 결과 확인
         print(list(tasks))
-
+        
+    print("--- %s seconds ---" % (time.time() - start_time))
     logging.info("Main-Thread : all done")
 
 
