@@ -93,7 +93,7 @@ def main():
     # with context 구문 사용
 
     with ThreadPoolExecutor(max_workers=3) as executor:
-        tasks = executor.map(crawling_selenium, [395750,20220705],[])
+        tasks = executor.map(crawling_selenium, [395750,269530],[20220705,20220605])
         
         # 결과 확인
         print(list(tasks))
