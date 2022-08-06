@@ -78,31 +78,13 @@ def crawling_selenium(product_code,product_date):
 
 
 if __name__ == "__main__":
-    # Logging format 설정
-    format = "%(asctime)s: %(message)s"
 
- 
-
-    # logging.INFO 로 출력을 할 때 기본 꼴 설정
-    logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-
- 
-
-    # logging.info() 는 그냥 형태 맞춰서 print 하는 거라 생각하자, 추후 이해 필요
-
-    logging.info("Main-Thread : before creating thread") 
     
     # 함수 인자 확인
     x = threading.Thread(target=crawling_selenium, args=(395750,20220705,)) # target은 실행할 함수, argc는 인자
     y = threading.Thread(target=crawling_selenium, args=(269530,20220605,))
-    logging.info("Main-Thread : before running thread")
    
     # 서브 스레드 시작
     x.start()
     y.start()
-    logging.info("Main-Thread : wait for the thread to finish")
     
-    # 주석 전후 결과 확인 - join을 실행하면 자식스레드가 끝난후에 메인스레드가 이어서 동작을 한다
-    # x.join()
-    
-    logging.info("Main-Thread : all done")
