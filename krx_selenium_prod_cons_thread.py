@@ -22,7 +22,7 @@ prefs = {"download.default_directory" : Initial_path} # 파일다운로드 경�
 chromeOptions.add_experimental_option("prefs",prefs) # 옵션 정의
 
 # 생산자
-def producer(queue, event, product_code,product_date):
+def producer(product_code,product_date):
     """네트워크 대기 상태라 가정(서버) , 크롤링, 파일 읽어오기 등의 역할"""
     while not event.is_set():
         print(f"상품코드 : {product_code}, 조회날짜 : {product_date} 시작!")
@@ -75,15 +75,15 @@ def producer(queue, event, product_code,product_date):
         print(stock_list)
         
         # 큐에 값을(크롤링한 리스트) 넣음
-        queue.put(stock_list)
+        pipeline.put(stock_list)
 
     logging.info("Producer received event. Exiting")
 
 # 소비자
-def consumer(queue, event):
+def consumer():
     """응답 받고 소비하는 것으로 가정 or DB 저장"""
-    while not event.is_set() or not queue.empty(): # while((false)or(false)) 여야지 무한반복이 멈춤으로, 큐에 있는 값들을                                                                                    다 내보낸다! 
-        message = queue.get()
+    while not event.is_set() or not pipeline.empty(): # while((false)or(false)) 여야지 무한반복이 멈춤으로, 큐에 있는 값들을                                                                                    다 내보낸다! 
+        message = pipeline.get()
         print()
         print("-----------------------------------------------------------------")
         print("In Consumer")
@@ -103,8 +103,8 @@ if __name__ == "__main__":
     # With Context 시작
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         
-        executor.submit(producer, pipeline, event, *(395750,20220705))
-        executor.submit(consumer, pipeline, event)
+        executor.map(producer, [395750,269530],[20220705,20220605])
+        executor.submit(consumer)
 
         # 실행 시간 조정
         time.sleep(0.1)
