@@ -1,6 +1,5 @@
-# 멀티쓰레드로 2개를 검색
+# 멀티프로세스로 구현
 
-import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
 from selenium import webdriver
@@ -66,10 +65,9 @@ def crawling_selenium(product_code,product_date):
     
     # 금융상품의 구성 종목 조회 - 일단 10개의 종목만 받아옴
     stock_list=list()
-    for i in range(1,11):
-        stock_info = driver_chrome.find_element(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr:nth-child('+str(i)+')')
+    stock_infos = driver_chrome.find_elements(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr')
+    for stock_info in stock_infos:
         stock_list.append(stock_info.text.split())
-    print(stock_list)
     
     # 드라이버 종료     
     driver_chrome.quit()
@@ -81,9 +79,9 @@ def crawling_selenium(product_code,product_date):
 def main():
 
     product_code_list = [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
-    product_date_list = [20220705,20220606,20220613,20220705,20220606,20220613,20220705,20220606,20220613,20220705,20220606]
+    product_date_list = [20220705,20220607,20220613,20220705,20220805,20220613,20220705,20220606,20220613,20220705,20220606]
     # with context 구문 사용
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         tasks = executor.map(crawling_selenium, product_code_list, product_date_list)
         
         # 결과 확인
