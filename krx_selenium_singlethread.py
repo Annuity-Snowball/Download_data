@@ -77,7 +77,7 @@ def crawling_selenium(product_code,product_date):
     return stock_list
 
 
-if __name__ == "__main__":
+def main():
 
     
     # 함수 인자 확인
@@ -87,4 +87,12 @@ if __name__ == "__main__":
     # 서브 스레드 시작
     x.start()
     y.start()
+    
+# 실행하는 코드의 위치가 여기일 경우 실행
+if __name__ == '__main__':
+    
+    # 시간 측정
+    start_time = time.time()
+    main()
+    print("--- %s seconds ---" % (time.time() - start_time))
     

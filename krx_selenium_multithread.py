@@ -80,9 +80,11 @@ def crawling_selenium(product_code,product_date):
 # 메인 영역
 def main():
 
+    product_code_list = [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
+    product_date_list = [20220705,20220606,20220613,20220705,20220606,20220613,20220705,20220606,20220613,20220705,20220606]
     # with context 구문 사용
     with ThreadPoolExecutor(max_workers=3) as executor:
-        tasks = executor.map(crawling_selenium, [395750,269530],[20220705,20220605])
+        tasks = executor.map(crawling_selenium, product_code_list, product_date_list)
         
         # 결과 확인
         print(list(tasks))
@@ -91,4 +93,6 @@ def main():
 
 # 실행하는 코드의 위치가 여기일 경우 실행
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))
