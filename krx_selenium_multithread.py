@@ -71,7 +71,7 @@ def crawling_selenium(product_code,product_date):
     
     # 드라이버 종료     
     driver_chrome.quit()
-    
+    print(stock_list)
     return stock_list
 
 
@@ -85,7 +85,7 @@ def main():
         tasks = executor.map(crawling_selenium, product_code_list, product_date_list)
         
         # 결과 확인
-        print(list(tasks))
+        # print(list(tasks))
 
 
 
