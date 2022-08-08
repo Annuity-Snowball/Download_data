@@ -22,62 +22,65 @@ prefs = {"download.default_directory" : Initial_path} # 파일다운로드 경�
 chromeOptions.add_experimental_option("prefs",prefs) # 옵션 정의
 
 # 생산자
-def producer():
+def producer(product_code,product_date):
     """네트워크 대기 상태라 가정(서버) , 크롤링, 파일 읽어오기 등의 역할"""
-    while not event.is_set():
-        for i in range(len(product_code_list)):
-            print(f"상품코드 : {product_code_list[i]}, 조회날짜 : {product_date_list[i]} 시작!")
-            # 접속할 사이트 설정
-            driver_chrome = webdriver.Chrome(executable_path=chromedriver, options=chromeOptions) # 설정 반영
-            driver_chrome.get("http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201030108")
+    while not event.is_set() and pipeline.not_full:
+        print(f"상품코드 : {product_code}, 조회날짜 : {product_date} 시작!")
+        # 접속할 사이트 설정
+        driver_chrome = webdriver.Chrome(executable_path=chromedriver, options=chromeOptions) # 설정 반영
+        driver_chrome.get("http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201030108")
 
 
 
-            # 처음 사이트 들어간 후 4초 대기
-            time.sleep(4)
+        # 처음 사이트 들어간 후 4초 대기
+        time.sleep(4)
 
 
-            # 금융상품명 검색 버튼 클릭
-            search_btn = driver_chrome.find_element(By.ID, 'btnisuCd_finder_secuprodisu1_0') # 검색 태그 선택
-            search_btn.click() # 태그 클릭
-            time.sleep(4)
+        # 금융상품명 검색 버튼 클릭
+        search_btn = driver_chrome.find_element(By.ID, 'btnisuCd_finder_secuprodisu1_0') # 검색 태그 선택
+        search_btn.click() # 태그 클릭
+        time.sleep(4)
 
-            # 금융상품코드를 통해서 금융상품 선택
-            search_bar = driver_chrome.find_element(By.CSS_SELECTOR,'#searchText__finder_secuprodisu1_0') # 검색 창 선택
-            search_bar.clear()
-            search_bar.send_keys(product_code_list[i])
-            search_bar.send_keys(Keys.RETURN)
-            time.sleep(4)
-            
+        # 금융상품코드를 통해서 금융상품 선택
+        search_bar = driver_chrome.find_element(By.CSS_SELECTOR,'#searchText__finder_secuprodisu1_0') # 검색 창 선택
+        search_bar.clear()
+        search_bar.send_keys(product_code)
+        search_bar.send_keys(Keys.RETURN)
+        time.sleep(4)
+        
 
-            # 조회날짜 선택 
-            elem = driver_chrome.find_element(By.ID, 'trdDd') # 검색 태그 선택
-            for _ in range(8):
-                elem.send_keys(Keys.BACK_SPACE) # clear() 를 입력하면 조회일자가 이상하게 초기화되기에 backspace로 지우는 과정 추가!
-            elem.send_keys(product_date_list[i])
-            elem.send_keys(Keys.RETURN)
-            time.sleep(4)
+        # 조회날짜 선택 
+        elem = driver_chrome.find_element(By.ID, 'trdDd') # 검색 태그 선택
+        for _ in range(8):
+            elem.send_keys(Keys.BACK_SPACE) # clear() 를 입력하면 조회일자가 이상하게 초기화되기에 backspace로 지우는 과정 추가!
+        elem.send_keys(product_date)
+        elem.send_keys(Keys.RETURN)
+        time.sleep(4)
 
 
-            # 조회 버튼 클릭
-            search_btn = driver_chrome.find_element(By.ID, 'jsSearchButton') # 검색 태그 선택
-            search_btn.click() # 태그 클릭
-            time.sleep(4)
-            
-            
-            # 금융상품의 구성 종목 조회 - 일단 10개의 종목만 받아옴
-            stock_list=list()
-            for i in range(1,11):
-                stock_info = driver_chrome.find_element(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr:nth-child('+str(i)+')')
-                stock_list.append(stock_info.text.split())
-            print()
-            print("-----------------------------------------------------------------")
-            print("In Producer",product_code_list[i],product_date_list[i])
-            print(stock_list)
-            
-            # 큐에 값을(크롤링한 리스트) 넣음
-            pipeline.put(stock_list)
-
+        # 조회 버튼 클릭
+        search_btn = driver_chrome.find_element(By.ID, 'jsSearchButton') # 검색 태그 선택
+        search_btn.click() # 태그 클릭
+        time.sleep(4)
+        
+        
+        # 금융상품의 구성 종목 조회 - 일단 10개의 종목만 받아옴
+        stock_list=list()
+        stock_infos = driver_chrome.find_elements(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr')
+        for stock_info in stock_infos:
+            stock_list.append(stock_info.text.split())
+        
+        # 드라이버 종료     
+        driver_chrome.quit()
+        
+        print()
+        print("-----------------------------------------------------------------")
+        print("In Producer",product_code,product_date)
+        print(stock_list)
+        
+        # 큐에 값을(크롤링한 리스트) 넣음
+        pipeline.put(stock_list)
+        count+=1
     logging.info("Producer received event. Exiting")
 
 # 소비자
@@ -98,9 +101,9 @@ def main():
    
 
     # With Context 시작
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         
-        executor.submit(producer)
+        executor.map(producer, product_code_list, product_date_list)
         executor.submit(consumer)
 
         # 실행 시간 조정
@@ -108,7 +111,8 @@ def main():
 
         
         # 프로그램 종료 - set을 하면 flag 값이 1이 됨으로, producer랑 comsumer가 1을 받으면 종료하게 코드를 짤 예정
-        event.set()
+        if count == len(product_code_list):
+            event.set()
         
 # 실행하는 코드의 위치가 여기일 경우 실행
 if __name__ == '__main__':
@@ -118,8 +122,10 @@ if __name__ == '__main__':
     # 이벤트 플래그 초기 값 0
     event = threading.Event() # threading 패키지에서 Event 객체를 가져옴
     
+    count = 0
+    
     product_code_list = [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
-    product_date_list = [20220705,20220606,20220613,20220705,20220606,20220613,20220705,20220606,20220613,20220705,20220606]
+    product_date_list = [20220705,20220607,20220613,20220705,20220805,20220613,20220705,20220606,20220613,20220705,20220606]
     
     # 시간 측정
     start_time = time.time()
