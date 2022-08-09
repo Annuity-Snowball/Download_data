@@ -68,15 +68,15 @@ def crawling_selenium(product_code,product_date):
     stock_infos = driver_chrome.find_elements(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr')
     for stock_info in stock_infos:
         # 종목명이 띄어쓰기로 이루어져 있는 경우도 있다
-        temp_list = stock_info.text.split()
-        temp_list[1]=" ".join(temp_list[1:-4])
-        del temp_list[2:-4]
-        stock_list.append(temp_list)
+        # temp_list = stock_info.text.split()
+        # temp_list[1]=" ".join(temp_list[1:-4])
+        # del temp_list[2:-4]
+        stock_list.append(stock_info.text.split())
     
     # 드라이버 종료     
     driver_chrome.quit()
     print(stock_list)
-    return stock_list
+    # return stock_list
 
 
 # 메인 영역
@@ -85,10 +85,11 @@ def main():
     product_code_list = [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
     product_date_list = [20220705,20220607,20220613,20220705,20220805,20220613,20220705,20220606,20220613,20220705,20220606]
     # with context 구문 사용
-    with ProcessPoolExecutor(max_workers=5) as executor:
-        tasks = executor.map(crawling_selenium, product_code_list, product_date_list)
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        executor.map(crawling_selenium, product_code_list, product_date_list)
         
         # 결과 확인
+        # print("In with")
         # print(list(tasks))
 
 

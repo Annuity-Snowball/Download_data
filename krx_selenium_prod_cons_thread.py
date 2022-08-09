@@ -1,4 +1,4 @@
-# 생산자 소비자를 활용한 쓰레드 구현
+# 생산자 소비자를 활용한 쓰레드 구현 - 안됨..
 import concurrent.futures
 import logging
 import queue
@@ -84,18 +84,20 @@ def producer(product_code,product_date):
         
         # 큐에 값을(크롤링한 리스트) 넣음
         pipeline.put(stock_list)
+        print('count 전 :',count)
         count+=1
+        print('count 후 :',count)
     logging.info("Producer received event. Exiting")
 
 # 소비자
 def consumer():
     """응답 받고 소비하는 것으로 가정 or DB 저장"""
     while not event.is_set() or not pipeline.empty(): # while((false)or(false)) 여야지 무한반복이 멈춤으로, 큐에 있는 값들을                                                                                    다 내보낸다! 
-        message = pipeline.get()
+        stock_list = pipeline.get()
         print()
         print("-----------------------------------------------------------------")
         print("In Consumer")
-        print(message)
+        print(stock_list)
 
     logging.info("Consumer received event. Exiting")
 
@@ -105,7 +107,7 @@ def main():
    
 
     # With Context 시작
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         
         executor.map(producer, product_code_list, product_date_list)
         executor.submit(consumer)
@@ -113,7 +115,7 @@ def main():
         # 실행 시간 조정
         time.sleep(0.1)
 
-        
+        print("count in with:",count)
         # 프로그램 종료 - set을 하면 flag 값이 1이 됨으로, producer랑 comsumer가 1을 받으면 종료하게 코드를 짤 예정
         if count == len(product_code_list):
             event.set()
@@ -128,8 +130,8 @@ if __name__ == '__main__':
     
     count = 0
     
-    product_code_list = [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
-    product_date_list = [20220705,20220607,20220613,20220705,20220805,20220613,20220705,20220606,20220613,20220705,20220606]
+    product_code_list = [395750,269530,295820,429740,433850,161510] # [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
+    product_date_list = [20220705,20220607,20220613,20220705,20220805,20220613] # [20220705,20220607,20220613,20220705,20220805,20220613,20220705,20220606,20220613,20220705,20220606]
     
     # 시간 측정
     start_time = time.time()
