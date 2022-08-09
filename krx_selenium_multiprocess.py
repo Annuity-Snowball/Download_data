@@ -1,6 +1,7 @@
 # 멀티프로세스로 구현
 
 from concurrent.futures import ProcessPoolExecutor
+import pandas as pd
 import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -67,16 +68,26 @@ def crawling_selenium(product_code,product_date):
     stock_list=list()
     stock_infos = driver_chrome.find_elements(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr')
     for stock_info in stock_infos:
-        # 종목명이 띄어쓰기로 이루어져 있는 경우도 있다
-        # temp_list = stock_info.text.split()
-        # temp_list[1]=" ".join(temp_list[1:-4])
-        # del temp_list[2:-4]
         stock_list.append(stock_info.text.split())
-    
+        
+    for temp_list in stock_list:
+        if len(temp_list) > 6:
+            temp_list[1]=" ".join(temp_list[1:-4])
+            del temp_list[2:-4]
+        
+    print("stock_list : ")
+    print(stock_list)
     # 드라이버 종료     
     driver_chrome.quit()
-    print(stock_list)
-    # return stock_list
+    
+    # 데이터프레임 실행차체가 안됨..
+    df = pd.DataFrame({},columns=['종목코드','구성종목명','주식수(계약수)','평가금액','시가총액','시가총액기준구성비중'])
+    for i in range(len(stock_list)):
+        df.loc[i]=stock_list[i]
+    df.to_csv('C:\self_project\\acceleration_download_file\Download_data\pdf_files\\'+product_code+'_'+product_date+'.csv',index=False)
+    print('df : ')
+    print(df)
+    
 
 
 # 메인 영역
