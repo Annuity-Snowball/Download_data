@@ -68,7 +68,11 @@ def producer(product_code,product_date):
         stock_list=list()
         stock_infos = driver_chrome.find_elements(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr')
         for stock_info in stock_infos:
-            stock_list.append(stock_info.text.split())
+            # 종목명이 띄어쓰기로 이루어져 있는 경우도 있다
+            temp_list = stock_info.text.split()
+            temp_list[1]=" ".join(temp_list[1:-4])
+            del temp_list[2:-4]
+            stock_list.append(temp_list)
         
         # 드라이버 종료     
         driver_chrome.quit()
