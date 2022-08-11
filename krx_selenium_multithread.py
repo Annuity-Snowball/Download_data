@@ -11,7 +11,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 import csv
 
 
-Initial_path="C:\self_project\\acceleration_download_file\Download_data\pdf_files"
+Initial_path="C:\self_project\snowball\Download_data\pdf_files"
 
 
 # 크롬 드라이버가 설치된 파일경로 설정
@@ -90,7 +90,7 @@ def crawling_selenium(product_code,product_date):
     
     # 파일로 저장하는 부분 후보2
     fields = ['종목코드','구성종목명','주식수(계약수)','평가금액','시가총액','시가총액기준구성비중']
-    with open('C:\self_project\\acceleration_download_file\Download_data\pdf_files\\'+str(product_code)+'_'+str(product_date)+'.csv', 'w') as f:  
+    with open('C:\self_project\snowball\Download_data\pdf_files\\'+str(product_code)+'_'+str(product_date)+'.csv', 'w',newline='') as f:  
         # using csv.writer method from CSV package
         write = csv.writer(f)  
         write.writerow(fields)

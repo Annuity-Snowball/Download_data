@@ -45,12 +45,12 @@ def getDailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든
 
     return rtList
 
-#print(getDailyDateInfo("2022-01-01", "2022-08-11"))
+print(getDailyDateInfo("2022-01-01", "2022-08-11"))
 
 
-data = pd.read_csv("ad.csv", sep=",")
-period = []
+# data = pd.read_csv("ad.csv", sep=",")
+# period = []
 
-for r in data['date']:
-    period.append(getDailyDateInfo(r, datetime.today().strftime('%Y-%m-%d')))
+# for r in data['date']:
+#     period.append(getDailyDateInfo(r, datetime.today().strftime('%Y-%m-%d')))
 

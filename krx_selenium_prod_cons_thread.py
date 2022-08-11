@@ -10,7 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-Initial_path="C:\self_project\\acceleration_download_file\Download_data\pdf_files"
+Initial_path="C:\self_project\snowball\Download_data\pdf_files"
 
 
 # 크롬 드라이버가 설치된 파일경로 설정
