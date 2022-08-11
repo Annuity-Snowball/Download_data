@@ -28,12 +28,12 @@ def crawling_selenium(product_code,product_date):
     time.sleep(4)
 
 
-    # 종목명 검색 버튼 클릭
+    # 금융상품명 검색 버튼 클릭
     search_btn = driver_chrome.find_element(By.ID, 'btnisuCd_finder_secuprodisu1_0') # 검색 태그 선택
     search_btn.click() # 태그 클릭
     time.sleep(4)
 
-    # 종목코드를 통해서 종목 선택
+    # 금융상품코드를 통해서 금융상품 선택
     search_bar = driver_chrome.find_element(By.CSS_SELECTOR,'#searchText__finder_secuprodisu1_0') # 검색 창 선택
     search_bar.clear()
     search_bar.send_keys(product_code)
@@ -56,7 +56,7 @@ def crawling_selenium(product_code,product_date):
     time.sleep(4)
     
     
-    # 구성 종목 조회
+    # 금융상품의 구성 종목 조회 - 일단 10개의 종목만 받아옴
     stock_list=list()
     for i in range(1,11):
         stock_info = driver_chrome.find_element(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr:nth-child('+str(i)+')')
