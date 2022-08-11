@@ -13,7 +13,7 @@
 ## 라이브러리 버전
 Package               Version
 --------------------- ---------
-async-generator       1.10
+async-generator       1.10,
 attrs                 22.1.0
 certifi               2022.6.15
 cffi                  1.15.1
