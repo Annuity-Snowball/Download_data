@@ -63,7 +63,7 @@ class Portfolio():
         # 데이터베이스에 업데이트하는 부분 - sql 쿼리문
         pass # 추후 수정 필요
     
-    # 메인함수에서 백테스트에 사용할 포트폴리오 객체 정보들을 넘겨주는 매소드
+    # 메인함수에서 '백테스트'에 사용할 '포트폴리오 객체 정보'들을 넘겨주는 매소드
     def returnToBacktest(self):
         return self.portfolio_id, self.strategy_ratio, self.start_time, self.end_time, self.rebalance_cycle, self.input_type, self.input_money
               
@@ -80,8 +80,6 @@ class Strategy():
         Args:
             strategy_kind (str): 전략종류(ex-'PER 저')를 입력 받음
             product_count_per_strategy (int): 한 전략에 해당하는 금융상품들 개수
-            start_time (str): 시작날짜
-            end_time (str): 끝날짜
         """
         
         self.strategy_kind=strategy_kind
@@ -95,7 +93,7 @@ class Strategy():
     # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문  반환하는 매소드
     def getProductListQuery(self):
         """
-        평가지표들에 따라서 쿼리문들을 추가해야 한다 -> 추가 및 수정필요!!
+        평가지표(전략종류, 전략구성금융상품개수)들에 따라서 쿼리문들을 추가해야 한다 -> 추가 및 수정필요!!
         날짜는 지정이 안되어 있는 쿼리문을 반환 합니다!
         """
         
@@ -129,7 +127,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     백테스트를 직접하는 부분은 추가 구현 필요합니다!
     1-1. 납입하는 날짜들을 계산하는 부분 구현 필요!
     1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요
-    2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하는 부분 getProductTickerQuery()은 추가 수정 필요
+    테스트로 생성한, 납입날짜, 리밸런싱날짜들, 사이날짜들을 테스트용이 아닌 실제로 치환해야 한다
     PortfolioInfo()를 통해서 PortfolioHistory() 와 PortfolioAccount() 도 만들어야 한다
     Args:
         portfolio_id (str): 포트폴리오 아이디
@@ -145,48 +143,53 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     
     
-    # 1-1. 납입하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
+    # 1-1. 납입하는 날짜들을 계산하는 부분 구현 필요 - test_input_date_lists를 대체
     input_date_list = list()
-    # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - getDateInfo 이용
+    
+    # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - test_start_rebalance_dates를 대체
     rebalance_date_list = list()
     
+    # 시작날짜와 끝날짜 사이에 존채하는 모든 날짜들을 담은 리스트
     test_dates=['2021-01-01','2021-01-15','2021-02-01','2021-02-15','2021-03-01','2021-03-15','2021-04-01','2021-04-15','2021-05-01','2021-05-15','2021-06-01','2021-06-15','2021-07-01','2021-07-15','2021-08-01']
     
+    # 리벨러스를 하는 날짜들 리스트(테스트용)
     test_start_rebalance_dates=['2021-01-01','2021-03-01','2021-05-01'] # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
+    
+    # 처음 시작하는 금액 -> 초기금액이 없을 경우 0원으로 계산해야 함
     test_start_rebalance_input_money = 1000000
     
+    # 납입하는 날짜들을 담은 리스트(테스트용)
     test_input_date_lists=['2021-02-01','2021-03-01','2021-04-01','2021-05-01','2021-06-01','2021-07-01'] # 납입한 날짜는 첫번째 날짜는 포함X
-    # 2. 전략으로 선택한 금융상품들을 가져오는 쿼리문 작성하고 데이터베이스에서 받아오는 구현
-    # poertfolio_info 는 포트폴리오에 있는 전략들의 조회당시 가격들이 담긴 리스트, portfolio_info_explain.py 참조
     
-    # print(strategy_kinds) # ['PER 저', 'PER 고']
     
-    # 날짜 별로 새로 남은 잔액들 히스토리
-    total_balance_account=dict()
     
-    total_portfolio_account = dict()
+    total_balance_account=dict() # 날짜 별로 남은 잔액들 히스토리
     
-    test_product_count=None
+    total_portfolio_account = dict() # 날짜 별로 잔액을 제외한 포트폴리오 가치 히스토리
+    
+    test_product_count=None # 최근 포트폴리오 구성 금융상품 개수
     
     balance_amount = 0 # 잔액 총합
     
-    rebalance_date=None
+    rebalance_date=None # 가장 최근 리밸런싱 한 날짜
     
     # a날짜 리밸런싱 -> a날 다음달 부터 a날 리밸런싱때 금융상품들로 주기적납부 -> b날 납부 -> b날 리밸런싱 ->  b날 다음달 부터 b날 리밸런싱때 금융상품들로 주기적납부
     
-    for i,test_date in enumerate(test_dates):
+    for test_date in test_dates:
         
-        # 날짜가 리밸런싱날짜에 있으면
+        # 조회날짜가 리밸런싱날짜에 있으면
         if test_date in test_start_rebalance_dates:
             
+            # '조회날짜'가 '납입날짜 리스트'에 있고, '조회날짜'가 '리밸런싱 날짜리스트'의 첫번째 날짜가 아니면(리밸런싱하는 첫번째 날이면 납입금액을 더하지 않아야 하므로)
             if test_date in test_input_date_lists and test_date != test_start_rebalance_dates[0]:
+                # '초기금액'에 '납입금액'을 더한다
                 test_start_rebalance_input_money+=input_money
             
-            rebalance_date=test_date
+            rebalance_date=test_date # '최근 리밸런싱한 날짜'를 갱신
             print("==================================")
-            print( test_date, "리밸런싱")
+            print(rebalance_date, "리밸런싱")
             print("==================================")
-            portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, test_date)
+            portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, rebalance_date)
             print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_rebalance_product_price)
             
             
@@ -204,17 +207,17 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print('리밸런싱 후 전략별 가치 :',portfolio_rebalance_strategy_value)
             
             portfolio_rebalance_value=getPortfolioValue(portfolio_rebalance_strategy_value)
-            total_portfolio_account[ test_date]=portfolio_rebalance_value[ test_date]
+            total_portfolio_account[rebalance_date]=portfolio_rebalance_value[rebalance_date]
             print('리밸런싱 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
             
-            total_balance_account[ test_date] = rebalance_balance_account[test_date]
+            total_balance_account[rebalance_date] = rebalance_balance_account[rebalance_date]
             print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
             print()
             
             # 리밸런싱 할 때 마다 잔액 총합을 초기화 ->  리밸런싱하면 잔액총합이 0이됨
             balance_amount=0
             # 리밸런싱 하고 나서 나온 잔액을 잔액총합에 더함
-            balance_amount+=total_balance_account[ test_date]
+            balance_amount+=total_balance_account[rebalance_date]
         
         # 날씨가 납입날짜에 있으면
         elif test_date in test_input_date_lists:
@@ -424,14 +427,17 @@ def getPortfolioProductPrice(stratgy_sql_query_list,strategy_kinds,date_list):
     
     return portfolio_product_price
 
-# 주기적으로 납입한 날의 새로 구매한 금융상품들 개수을 반환 - 고정납입금액에 사용 - ing
+# 주기적으로 납입한 날의 새로 구매한 금융상품들 개수을 반환 - 
 def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
     """_summary_
 
     Args:
-        portfolio_product_price (dict): _description_
-        input_money (int): 리밸런싱할때마다의 계좌에 있는 금액을 새로 넣어주면 되ㄹ듯!
-        stratgy_ratio (list): _description_
+        portfolio_product_price (_type_): _description_
+        input_money (_type_): _description_
+        strategy_ratio (_type_): _description_
+
+    Returns:
+        _type_: ex)
     """
     
     # 복사를 통해서 portfolio_history 생성
@@ -485,15 +491,15 @@ def getPortfolioProductAccumulateCount(portfolio_rebalance_product_count,portfol
 
 # 리밸런싱 하는 날에 새로 구매할 금융상품들과 가격을 반환 - 리밸런싱 날짜들을 받자
 def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,rebalance_date):
-    """
-    1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
-    2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
+    """_summary_
 
     Args:
-        portfolio_product_price (list): 포트폴리오계좌
-        sql_queries (list): 쿼리문들이 담겨있는 리스트
-        strategy_kinds (list): 전략 종류들이 담겨 있는 리스트
+        sql_queries (_type_): 날짜를 제외한 전략종류 에 대응하는 쿼리문!
+        strategy_kinds (_type_): _description_
+        rebalance_date (_type_): _description_
 
+    Returns:
+        portfolio_rebalance_product_price : ex) [{'PER 저': {'2021-01-01': [['euro', 11315.0], ['china', 16981.0]]}}]
     """
     portfolio_rebalance_product_price = list()
     # 전략 별로 for 문이 돈다
@@ -541,11 +547,6 @@ def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,rebalance_date)
 
 # 리밸런싱 하는 날들에 새로 구매한 금융상품들과 그 개수를 반환, 잔액도 반환 - 리밸런싱에 사용
 def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_money,strategy_ratio):
-    
-    
-    # 여기에 리밸런싱 날짜 사이에 상품들 가격 구하고 계좌에 더하는 함수 구현 - input_money_list 대신에서 넣어야 함 format - [100000,200000,300000]
-    
-    
     
     portfolio_rebalance_product_count=copy.deepcopy(portfolio_rebalance_product_price)
     
@@ -662,7 +663,6 @@ def makePortfolio():
     input_money = int(input("주기적으로 납입하는 금액 입력 : "))
     return portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money
    
-    
 # 전략을 생성하기 위해서 내용을 입력받는 함수
 def makeStrategy(i):
     strategy_kind = input(str(i+1)+"번째 전략 종류를 입력하세요(ex PER 저, PBR 저) : ")
@@ -671,28 +671,27 @@ def makeStrategy(i):
     
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
-    # 포트폴리오 생성 예시 
+    # 'makePortfoili() 함수' 를 이용해서 '포트폴리오 입력 변수'들을 생성
     portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money=makePortfolio()
-    
+    # '포트폴리오 입력 변수'와 'Portfolio() 클래스'를 이용해서 '포트폴리오 객체' 생성
     portfolio_1=Portfolio(portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money) # 포트폴리오면, 구성전략개수, 시작날짜, 끝날짜, 리밸런싱주기(달), 납입방법, 주기적납부금액
     
-    # 전략 생성 예시 - 사용자가 직접 입력할 수 있게 수정 필요
-    # 전략 생성 예시 - 사용자가 직접 입력할 수 있게 수정 필요
-    strategy_list = list()
-    for i in range(strategy_count):
-        strategy_kind, product_count = makeStrategy(i)
-        strategy_list.append(Strategy(strategy_kind, product_count))
+    
+    strategy_list = list() # '포트폴리오'를 구성하는 '전략'들을 담을 '전략 리스트' 생성, '전략리스트' == '포트폴리오' 라고 생각해도 무관
+    for i in range(strategy_count): # '포트폴리오'를 구성하는 '전략의 개수'만큼 반복
+        strategy_kind, product_count = makeStrategy(i) # 'makeStrategy() 함수'를 이용해서 '전략종류(PER 저 등)'와 '전략으로 선택할 금융상품 개수'를 입력받음
+        strategy_list.append(Strategy(strategy_kind, product_count)) # 'Strategy() 클래스'를 이용해서 생성한 '전략'들을 '전략 리스트'에 추가
     
     # 접속하기 - 해당 데이터 베이스에 접속
     db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
     snowball=db.cursor() 
 
     # 백테스트 함수 사용하기 위해서 리스트들 생성
-    stratgy_kind_list = list()
-    stratgy_sql_query_list = list()
-    for strategy_object in strategy_list:
-        stratgy_kind_list.append(strategy_object.getProductListQuery()[0])
-        stratgy_sql_query_list.append(strategy_object.getProductListQuery()[1])
+    stratgy_kind_list = list() # '전략종류들을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류'들이 담김
+    stratgy_sql_query_list = list() # '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들이 담김
+    for strategy_object in strategy_list: # '전략리스트' 에 있는 모든 '전략'들에 대해서 반복
+        stratgy_kind_list.append(strategy_object.getProductListQuery()[0]) # '전략'의 '전략종류'을 '전략종류들을 담을 리스트'에 추가
+        stratgy_sql_query_list.append(strategy_object.getProductListQuery()[1]) # '전략'의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'을 해당 리스트에 추가
     
     
     # 백테스트 함수 실행
