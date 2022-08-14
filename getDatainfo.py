@@ -2,9 +2,12 @@ from dateutil.parser import *
 from dateutil.relativedelta import *
 from dateutil.rrule import *
 import exchange_calendars as ecal
+import warnings
 import time
 import pandas as pd
 from datetime import datetime
+
+warnings.simplefilter(action='ignore', category=FutureWarning) # FutureWaring 제거
 
 x = ecal.get_calendar("XKRX")  # 한국 증시 코드
 
