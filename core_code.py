@@ -32,11 +32,11 @@ class Portfolio():
         # 포트폴리오명 입력받음
         self.portfolio_name = portfolio_name
         
-        # 구성 전략 개수 입력받기
+        # 구성 전략 개수 입력받기 - 5개가 맥스
         if strategy_count<=5:
             self.strategy_count=strategy_count
         elif strategy_count>5: 
-            print('error!') # 추후 수정 필요
+            print('error!') # 추후 수정 필요,
             
         # 구성 전략 개수 별 비율 입력 받기
         self.strategy_ratio=list()
@@ -76,7 +76,6 @@ class Strategy():
     # 객체 생성할 때 초기화하는 매소드 입니다
     def __init__(self,strategy_kind, product_count_per_strategy):
         """
-
         Args:
             strategy_kind (str): 전략종류(ex-'PER 저')를 입력 받음
             product_count_per_strategy (int): 한 전략에 해당하는 금융상품들 개수
@@ -85,15 +84,12 @@ class Strategy():
         self.strategy_kind=strategy_kind
         self.product_count_per_strategy = product_count_per_strategy
         
-    # 전략의 시작날짜와 끝날짜를 반영하는 메소드
-    # def getStratgyDate(self):
-    #     return self.start_time,self.end_time
-        
         
     # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문  반환하는 매소드
     def getProductListQuery(self):
         """
-        평가지표(전략종류, 전략구성금융상품개수)들에 따라서 쿼리문들을 추가해야 한다 -> 추가 및 수정필요!!
+        1. 평가지표(전략종류, 전략구성금융상품개수)들에 따라서 쿼리문들을 추가해야 한다 -> 추가 및 수정필요!!
+        2. 평가지표
         날짜는 지정이 안되어 있는 쿼리문을 반환 합니다!
         """
         
@@ -167,7 +163,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     total_portfolio_account = dict() # 날짜 별로 잔액을 제외한 포트폴리오 가치 히스토리
     
-    test_product_count=None # 최근 포트폴리오 구성 금융상품 개수
+    test_product_count=None # 최근 포트폴리오 구성 금융상품 개수(납입X,리밸런싱날X, 그러나 조회를 해야 할 때 사용)
     
     balance_amount = 0 # 잔액 총합
     
@@ -175,14 +171,16 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     # a날짜 리밸런싱 -> a날 다음달 부터 a날 리밸런싱때 금융상품들로 주기적납부 -> b날 납부 -> b날 리밸런싱 ->  b날 다음달 부터 b날 리밸런싱때 금융상품들로 주기적납부
     
+    # 백테스트기간 날짜들에 대해서 백테스트 진행!
     for test_date in test_dates:
         
         # 조회날짜가 리밸런싱날짜에 있으면
         if test_date in test_start_rebalance_dates:
             
+            # 처음 '리밸런싱하는 날'이 아닐 경우
             # '조회날짜'가 '납입날짜 리스트'에 있고, '조회날짜'가 '리밸런싱 날짜리스트'의 첫번째 날짜가 아니면(리밸런싱하는 첫번째 날이면 납입금액을 더하지 않아야 하므로)
             if test_date in test_input_date_lists and test_date != test_start_rebalance_dates[0]:
-                # '초기금액'에 '납입금액'을 더한다
+                # '초기금액'에 '납입금액'을 더한다 -> '리밸런싱할 금액'을 구한다!
                 test_start_rebalance_input_money+=input_money
             
             rebalance_date=test_date # '최근 리밸런싱한 날짜'를 갱신
@@ -193,10 +191,10 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_rebalance_product_price)
             
             
-            print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount)
+            print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
             
             rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio)
-            test_product_count=portfolio_rebalance_product_count
+            test_product_count=copy.deepcopy(portfolio_rebalance_product_count)
             print('리밸런싱 후 금융상품들 개수 :', portfolio_rebalance_product_count)
             print("리밸런싱 후 잔액 :", rebalance_balance_account)
             
@@ -233,7 +231,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print('납부때마다 추가되는 잔액 :',input_balance_account)
             
             portfolio_product_count = getPortfolioProductAccumulateCount(test_product_count,portfolio_product_count)
-            test_product_count=portfolio_product_count
+            test_product_count=copy.deepcopy(portfolio_product_count)
             print('누적 금융상품 개수 :',portfolio_product_count)
             
             portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
@@ -300,7 +298,7 @@ def getDateInfo(start_date,end_date,interval):
     
     pass
  
-# 지정한 날짜들, 전택한 전략들에 대응하는 금융상품들 정보 반환하는 함수 - 리밸런싱 날짜들을 받자!
+# 날짜지정이 안되어 있는 쿼리문에서 날짜를 지정하는 부분을 추가해서 반환하는 함수 - 리밸런싱 날짜들을 받자!
 def getProductTicker(sql_query,interval_dates):
     """
     
@@ -309,9 +307,13 @@ def getProductTicker(sql_query,interval_dates):
     interval_dates(list) : 납입날짜들 혹은 리밸런싱날짜들이 리스트로 입력받음
     
     Return:
-    ex) [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']]
+    ex) product_ticker_infos = [
+          [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']], 
+          [['2021-02-01', 'bank'], ['2021-02-01', 'kospi'], ['2021-02-01', 'energy']], 
+          [['2021-03-01', 'bank'], ['2021-03-01', 'kospi'], ['2021-03-01', 'energy']]
+         ]
     """
-    result=list()
+    product_ticker_infos=list()
     
     # 입력받은 날짜들에 대해서 반복
     for interval_date in interval_dates:
@@ -325,18 +327,18 @@ def getProductTicker(sql_query,interval_dates):
         snowball.execute(get_product_ticker_query) 
         
         # sql 결과값들로 조회한 값들을 anwers에 담음
-        answers=list(snowball.fetchall())
+        results=list(snowball.fetchall())
         
         # sql 데이터베이스에서 가져온 결과값들의 형변환
-        for i in range(len(answers)):
-            answers[i] = list(answers[i]) # 기존 answers의 요소들의 tuple 형태가 수정 가능하게 list 타입으로 형 변환
-            answers[i][0] = str(answers[i][0]) # 기존 answers의 요소의 첫번째 요소들이 date 타입이라 str 타입으로 형변환
+        for i in range(len(results)):
+            results[i] = list(results[i]) # 기존 answers의 요소들의 tuple 형태가 수정 가능하게 list 타입으로 형 변환
+            results[i][0] = str(results[i][0]) # 기존 answers의 요소의 첫번째 요소들이 date 타입이라 str 타입으로 형변환
             
         
-        result.append(answers)
+        product_ticker_infos.append(results)
         
     # 데이터베이스에서 해당하는 날짜들, 금융상품티커 가져와서 반환 
-    return result
+    return product_ticker_infos
 
 # 날짜에 대응하는 금융상품의 가격을 가져오는 함수
 def getProductPrice(product_date,product_ticker):
@@ -357,12 +359,12 @@ def getProductPrice(product_date,product_ticker):
     # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
     snowball.execute(sql_query) 
 
+    # result는 데이터베이스에서 받아 온 결과물들을 담을 리스트
     result=snowball.fetchone()
     result=list(result)
-    result.insert(0,product_ticker)
+    result.insert(0,product_ticker) # '금융상품티커'를 첫번째 인덱스에 추가
     
     # print('getProductPrice result :', result)
-    # 쿼리문을 통해서 데이터베이스에 저장되어 있는 금융상품 가격 가져오는 부분 구현 필요, return 부분도 수정 필요
     return result
   
 # 주기적으로 납입한 날의 새로 구매한 금융상품들 가격을 반환- 고정납입금액에 사용 
@@ -491,22 +493,25 @@ def getPortfolioProductAccumulateCount(portfolio_rebalance_product_count,portfol
             product_list[1]+=rebalance_product_strategy_value[rebalance_product_strategy_value_key][i][1]
     return portfolio_product_count
 
-# 리밸런싱 하는 날에 새로 구매할 금융상품들과 가격을 반환 - 리밸런싱 날짜들을 받자
-def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,rebalance_date):
+# '리밸런싱 하는 날에 새로 구매할 금융상품들과 가격'을 반환
+def getPortfolioRebalanceProductPrice(stratgy_sql_query_list,strategy_kinds,rebalance_date):
     """_summary_
 
     Args:
-        sql_queries (_type_): 날짜를 제외한 전략종류 에 대응하는 쿼리문!
-        strategy_kinds (_type_): _description_
-        rebalance_date (_type_): _description_
-
+        sql_queries (_type_): 날짜를 제외한 '포트폴리오'를 구성하는 '전략종류'에 대응하는 값들을 가져오는 쿼리문!
+        strategy_kinds (_type_): '포트폴리오'를 구성하는 '전략종류'들을 담은 리스트
+        rebalance_date (_type_): '리밸런싱할 날짜'
     Returns:
-        portfolio_rebalance_product_price : ex) [{'PER 저': {'2021-01-01': [['euro', 11315.0], ['china', 16981.0]]}}]
+        portfolio_rebalance_product_price : ex) [{'PER 저': {'2021-01-01': [['euro', 11315.0], ['china', 16981.0]]}}, {'PER 고': {'2021-01-01': [['qqq', 11679.0], ['spy', 11899.0], ['kospi', 13228.0]]}}, {'PBR 저': {'2021-01-01': [['bio', 16203.0], ['qqq', 11679.0], ['energy', 16678.0], ['spy', 11899.0]]}}]
     """
-    portfolio_rebalance_product_price = list()
-    # 전략 별로 for 문이 돈다
-    for i,sql_query in enumerate(sql_queries):
+    
+    portfolio_rebalance_product_price = list() # 반환할 '리밸런싱 할 때 구매할 금융상품들 가격' 리스트
+    
+    # '포트폴리오'를 구성하는 '전략종류' for 문이 돈다
+    for i,sql_query in enumerate(stratgy_sql_query_list):
         # print()
+        
+        product_ticker_infos = getProductTicker(sql_query,[rebalance_date])
         # product_ticker_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 티커의 정보를 담고 잇음
         # ex) product_ticker_infos = 
         # [
@@ -514,37 +519,39 @@ def getPortfolioRebalanceProductPrice(sql_queries,strategy_kinds,rebalance_date)
         #  [['2021-02-01', 'bank'], ['2021-02-01', 'kospi'], ['2021-02-01', 'energy']], 
         #  [['2021-03-01', 'bank'], ['2021-03-01', 'kospi'], ['2021-03-01', 'energy']]
         # ]
-        product_ticker_infos = getProductTicker(sql_query,[rebalance_date])
-        # print("product_ticker_infos: " ,product_ticker_infos)
         
-        strategy_dict=dict() # key가 '전략1'등인 딕셔너리
+        strategy_dict=dict() # key가 '전략명(전략종류)'등인 딕셔너리, '전략종류'가 바뀔 때마다 갱신을 해줘야 하므로 dict()로 초기화해주는 부분 필요
         
-        product_dict=dict() # key가 '전략1로 선택한 금융상품1 날짜' 등인 딕셔러니
-        # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
+        product_dict=dict() # key가 '전략명(전략종류)'로 선택한 '금융상품'의 날짜' 인 딕셔러니
+        
+        # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현
         for product_ticker_info in product_ticker_infos:
             # print("product_ticker_info :",product_ticker_info)
             # ex) product_ticker_info = [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']]
+            
             for product_date,product_ticker in product_ticker_info:
-                
                 # print('product_date, product_ticker :',product_date,product_ticker)
+                
                 # product_price_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 가격의 정보를 담고 잇음
-                # ex) product_price_info = ['china', 5952.0]
                 product_price_info=getProductPrice(product_date,product_ticker)
                 # print('product_price_info :',product_price_info)
+                # ex) product_price_info = ['china', 5952.0]
                 
-                # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
+                # key가 '전략명(전략종류)'로 선택한 '금융상품'의 날짜'인 딕셔러니 업데이트
+                # key값이 product_date인 딕셔너리에 추가
                 if product_date in product_dict:
                     product_dict[product_date].append(product_price_info)
-                else:
+                else: # 처음에는 key값이 product_date 인 딕셔너리가 없으니 생성을 해줘야 한다.
                     product_dict[product_date] = [product_price_info]
                     
         
-        strategy_dict[strategy_kinds[i]]=product_dict # key가 '전략1'등인 딕셔너리 추가
+        strategy_dict[strategy_kinds[i]]=product_dict #  key가 '전략명(전략종류)'등인 딕셔너리 업데이트
         
         
         # 이 부분을 통해서 for 문을 돌면서 '전략1','전략2' 등 전략들이 다 추가가 된다!
         portfolio_rebalance_product_price.append(strategy_dict)
     
+    # 결과값을 반환!
     return portfolio_rebalance_product_price
 
 # 리밸런싱 하는 날들에 새로 구매한 금융상품들과 그 개수를 반환, 잔액도 반환 - 리밸런싱에 사용
