@@ -289,8 +289,10 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print()
     
     print()
+    real_portfolio_account=getRealPortfolioValue(total_portfolio_account,total_balance_account)
     print('포트폴리오 가치 추이(잔액포함X):',total_portfolio_account)
     print('잔액추이', total_balance_account)
+    print('포트폴리오 가치 추이(잔액포함0):',real_portfolio_account)
     
 # 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
 def getDateInfo(start_date,end_date,interval):
@@ -668,7 +670,15 @@ def makeStrategy(i):
     strategy_kind = input(str(i+1)+"번째 전략 종류를 입력하세요(ex PER 저, PBR 저) : ")
     product_count = int(input("전략의 구성 금융상품 개수를 입력하세요 : "))
     return strategy_kind, product_count
-    
+   
+# 잔액포함 포트폴리오 가치 반환하는 함수
+def getRealPortfolioValue(total_portfolio_account,total_balance_account):
+    real_portfolio_account = dict()
+
+    for portfolio_key in total_portfolio_account.keys():
+        real_portfolio_account[portfolio_key]=total_portfolio_account[portfolio_key]+total_balance_account[portfolio_key]
+    return real_portfolio_account
+ 
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
     # 'makePortfoili() 함수' 를 이용해서 '포트폴리오 입력 변수'들을 생성
