@@ -83,6 +83,9 @@ class Strategy():
         
         self.strategy_kind=strategy_kind
         self.product_count_per_strategy = product_count_per_strategy
+        if self.strategy_kind == 'PER':
+            self.per_min = input('per은 몇 이상? : ')
+            self.per_max = input('per은 몇 이하? : ')
         
         
     # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문  반환하는 매소드
@@ -100,6 +103,11 @@ class Strategy():
         elif self.strategy_kind == 'PER 고':
             # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
             self.sql_query='select product_date,product_ticker from product_evaluate order by per desc limit '+str(self.product_count_per_strategy)
+            
+        # 평가지표의 범위를 입력받을 경우    
+        elif self.strategy_kind == 'PER':
+            # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
+            self.sql_query='select product_date,product_ticker from product_evaluate where per >= '+self.per_min+' and per <='+self.per_max+' order by per asc limit '+str(self.product_count_per_strategy)
         
         elif self.strategy_kind == 'PBR 저':
             # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
@@ -189,6 +197,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print("==================================")
             portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, rebalance_date)
             print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_rebalance_product_price)
+            portfolio_current_rebalance_product_price = copy.deepcopy(portfolio_rebalance_product_price) # getPortfolioProductPrice() 을 위해서 deepcopy 사용, 안하면 변수를 바꾸는 부분이 다른 파트에 있어서 의도대로 안됨
             
             
             print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
@@ -222,8 +231,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print("==================================")
             print(test_date, "납입날짜")
             print("==================================")
-            portfolio_product_price=getPortfolioProductPrice(stratgy_sql_query_list, strategy_kinds,[rebalance_date,test_date])
+            portfolio_product_price=getPortfolioProductPrice(portfolio_current_rebalance_product_price, test_date)
             print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
+            portfolio_current_rebalance_product_price = copy.deepcopy(portfolio_product_price) # getPortfolioProductPrice() 을 위해서 deepcopy 사용, 안하면 변수를 바꾸는 부분이 다른 파트에 있어서 의도대로 안됨
             print('주기적 납부하는 돈 :', input_money)
             
             input_balance_account,portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
@@ -261,8 +271,9 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print(test_date, "나머지경우")
             print("==================================")
             # print('rebalnce_date',rebalance_date)
-            portfolio_product_price=getPortfolioProductPrice(stratgy_sql_query_list, strategy_kinds,[rebalance_date,test_date])
+            portfolio_product_price=getPortfolioProductPrice(portfolio_current_rebalance_product_price, test_date)
             print(test_date,'금융상품 가격 :',portfolio_product_price)
+            portfolio_current_rebalance_product_price = copy.deepcopy(portfolio_product_price) # getPortfolioProductPrice() 을 위해서 deepcopy 사용, 안하면 변수를 바꾸는 부분이 다른 파트에 있어서 의도대로 안됨
             
             test_product_count=changeDateDictKey(test_product_count,test_date)
             print(test_date,'금융상품 개수 :',test_product_count)
@@ -320,7 +331,10 @@ def getProductTicker(sql_query,interval_dates):
     
         # Strategy 클래스의 getProductListQuery() 매소드에서 받은 날짜지정이 안되어 있는 쿼리문에 날짜 지정 부분을 추가
         get_product_ticker_query=sql_query.split(' ')
-        get_product_ticker_query.insert(4,"where product_date = '"+str(interval_date)+"'") 
+        if get_product_ticker_query[4] == 'where':
+            get_product_ticker_query.insert(5,"product_date = '"+str(interval_date)+"' and")
+        else:
+            get_product_ticker_query.insert(4,"where product_date = '"+str(interval_date)+"'") 
         get_product_ticker_query=" ".join(get_product_ticker_query)
 
         # SQL 구문 실행하기 - sql 변수에 sql 명령어를 넣고 .execute()를 통해 실행
@@ -368,68 +382,15 @@ def getProductPrice(product_date,product_ticker):
     return result
   
 # 주기적으로 납입한 날의 새로 구매한 금융상품들 가격을 반환- 고정납입금액에 사용 
-def getPortfolioProductPrice(stratgy_sql_query_list,strategy_kinds,date_list):
-    """
-    1. strategy_dict[strategy_kinds[i]+" 계좌금액"] 계산해서 금액들 추가하는 부분 구현 필요
-    2. portfolio_info['포트폴리오 계좌금액']=[] 계산해서 금액들 추가하는 부분 구현 필요
-
-    Args:
-        portfolio_pstratgy_sql_query_list (list): 쿼리문들이 담겨있는 리스트
-        strategy_kinds (list): 전략 종류들이 담겨 있는 리스트
-
-    """
-    portfolio_product_price = list()
-    # 전략 별로 for 문이 돈다
-    for i,stratgy_sql_query in enumerate(stratgy_sql_query_list):
-        # print()
-        # product_ticker_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 티커의 정보를 담고 잇음
-        # ex) product_ticker_infos = 
-        # [
-        #  [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']], 
-        #  [['2021-02-01', 'bank'], ['2021-02-01', 'kospi'], ['2021-02-01', 'energy']], 
-        #  [['2021-03-01', 'bank'], ['2021-03-01', 'kospi'], ['2021-03-01', 'energy']]
-        # ]
-        product_ticker_infos = getProductTicker(stratgy_sql_query,date_list)
-        # print("product_ticker_infos: " ,product_ticker_infos)
-        
-        strategy_dict=dict() # key가 '전략1'등인 딕셔너리
-        
-        product_dict=dict() # key가 '전략1로 선택한 금융상품1 날짜' 등인 딕셔러니
-        
-        backtest_tickers=list() # 기간동안 백테스트를 시도학 금융상품 티커
-        # 입력받은 product_ticker_infos 는 날짜마다 금융상품들이 갱신되는데, 백테스트를 할때는 한번 선택한걸 기간동안 끌고 가야 한다
-        for temp_list in product_ticker_infos[0]:
-            backtest_tickers.append(temp_list[1])
-        for product_ticker_info in product_ticker_infos:
-            for j,temp in enumerate(product_ticker_info):
-                temp[1]=backtest_tickers[j]
-        
-        # 3. 날짜에 대응하는 금융상품의 가격을 가져오는 부분 구현 - for문 안에 함수 넣어서 구현!
-        for product_ticker_info in product_ticker_infos:
-            # print("product_ticker_info :",product_ticker_info)
-            # ex) product_ticker_info = [['2021-01-01', 'bank'], ['2021-01-01', 'energy'], ['2021-01-01', 'kospi']]
-            for product_date,product_ticker in product_ticker_info:
-                
-                # print('product_date, product_ticker :',product_date,product_ticker)
-                # product_price_info 는 조회날짜 별로 전략에 따라 선택한 금융상품들의 가격의 정보를 담고 잇음
-                # ex) product_price_info = ['china', 5952.0]
-                product_price_info=getProductPrice(product_date,product_ticker)
-                # print('product_price_info :',product_price_info)
-                if product_date != date_list[0]:
-                    # key가 '전략1로 선택한 금융상품1' 등인 딕셔러니 추가
-                    if product_date in product_dict:
-                        product_dict[product_date].append(product_price_info)
-                    else:
-                        product_dict[product_date] = [product_price_info]
-                    
-        
-        strategy_dict[strategy_kinds[i]]=product_dict # key가 '전략1'등인 딕셔너리 추가
-        
-        
-        # 이 부분을 통해서 for 문을 돌면서 '전략1','전략2' 등 전략들이 다 추가가 된다!
-        portfolio_product_price.append(strategy_dict)
+def getPortfolioProductPrice(portfolio_rebalance_product_price, test_date):
     
-    return portfolio_product_price
+    for strategy_kind_dict in portfolio_rebalance_product_price:
+        for strategy_kind_key in strategy_kind_dict.keys():
+            temp = strategy_kind_dict[strategy_kind_key]
+            temp[test_date] = temp.pop(list(temp.keys())[0])
+            for i,product_list in enumerate(temp[test_date]):
+                temp[test_date][i] = getProductPrice(test_date,product_list[0])
+    return portfolio_rebalance_product_price
 
 # 주기적으로 납입한 날의 새로 구매한 금융상품들 개수을 반환 - 
 def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
@@ -685,6 +646,9 @@ def getRealPortfolioValue(total_portfolio_account,total_balance_account):
     for portfolio_key in total_portfolio_account.keys():
         real_portfolio_account[portfolio_key]=total_portfolio_account[portfolio_key]+total_balance_account[portfolio_key]
     return real_portfolio_account
+
+
+
  
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
