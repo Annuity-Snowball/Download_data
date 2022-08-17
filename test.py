@@ -1,27 +1,271 @@
-# coding=utf8
+from datetime import date, timedelta
+import pymysql
+import copy
+
+from dateutil.parser import *
+from dateutil.relativedelta import *
+from dateutil.rrule import *
+import exchange_calendars as ecal
+import warnings
+import time
 import pandas as pd
+from datetime import datetime
 
-stock_list_1 = [['330590', '롯데리츠', '12,214.00', '64,367,780', '66,199,880', '-'], ['365550', 'ESR켄달스퀘어리츠', '11,093.00', '60,789,640', '63,784,750', '-'], ['348950', '제이알글로벌리츠', '13,182.00', '60,571,290', '61,757,670', '-'], ['293940', '신한알파리츠', '6,251.00', '47,632,620', '48,882,820', '-'], ['357120', '코람코에너지리츠', '8,111.00', '46,394,920', '47,368,240', '-'], ['395400', 'SK리츠', '6,839.00', '37,546,110', '38,161,620', '-'], ['396690', '미래에 셋글로벌리츠', '4,704.00', '21,967,680', '22,179,360', '-'], ['088260', '이리츠코크렙', '3,673.00', '20,862,640', '21,560,510', '-'], ['377190', '디앤디플랫폼리츠', '4,481.00', '20,343,740', '20,366,145', '-'], ['417310', '코람코더 원리츠', '3,748.00', '20,051,800', '20,089,280', '-'], ['404990', '신한서부티엔디리츠', '3,245.00', '15,608,450', '16,062,750', '-'], ['400760', 'NH올원리츠', '2,936.00', '13,285,400', '13,373,480', '-'], ['357430', '마스턴프리미어 리츠', '1,572.00', '7,655,640', '7,742,100', '-'], ['KRD010010001', '원화현금', '-', '-', '2,416,608', '-']]
-stock_list_2 = [['005930', '삼성전자', '1,208.00', '68,976,800', '69,097,600', '18.43'], ['000660', 'SK하이닉스', '126.00', '11,226,600', '11,655,000', '3.11'], ['207940', '삼성바이오로직스', '11.00', '8,701,000', '8,855,000', '2.36'], ['086790', '하나금융지주', '188.00', '7,209,800', '7,322,600', '1.95'], ['002380', 'KCC', '24.00', '6,972,000', '7,212,000', '1.92'], ['030200', 'KT', '185.00', '6,872,750', '6,919,000', '1.85'], ['010130', '고려아연', '14.00', '6,734,000', '6,867,000', '1.83'], ['035420', 'NAVER', '25.00', '5,875,000', '6,075,000', '1.62'], ['006400', '삼성SDI', '11.00', '5,566,000', '5,896,000', '1.57'], ['000270', '기아', '75.00', '5,887,500', '5,880,000', '1.57'], ['051910', 'LG화학', '11.00', '5,500,000', '5,632,000', '1.50'], ['011790', 'SKC', '41.00', '5,248,000', '5,391,500', '1.44'], ['005380', '현대차', '30.00', '5,340,000', '5,325,000', '1.42'], ['267250', 'HD현대', '94.00', '5,217,000', '5,151,200', '1.37'], ['086280', '현대글로비스', '28.00', '5,124,000', '5,110,000', '1.36'], ['035720', '카카오', '65.00', '4,426,500', '4,680,000', '1.25'], ['003490', '대한항공', '169.00', '4,241,900', '4,301,050', '1.15'], ['004000', '롯데정밀화학', '63.00', '4,176,900', '4,227,300', '1.13'], ['010620', '현대미포조선', '48.00', '4,080,000', '4,185,600', '1.12'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
-stock_list_3 = [['FR0010340141', 'ADP', '51.00', '-', '-', '-'], ['ES0105046009', 'AENA', 'SA', '150.00', '-', '-', '-'], ['US0255371017', 'AMERICAN', 'ELECTRIC', 'POWER', '93.00', '-', '-', '-'], ['US0304201033', 'AMERICAN', 'WATER', 'WORKS', 'CO', 'INC', '33.00', '-', '-', '-'], ['CNE1000001X0', 'ANHUI', 'EXPRESSWAY', 'CO', 'LTD-H', '553.00', '-', '-', '-'], ['IT0003506190', 'ATLANTIA', 'SPA', '1,019.00', '-', '-', '-'], ['AU0000013559', 'ATLAS', 'ARTERIA', '1,852.00', '-', '-', '-'], ['NZAIAE0002S6', 'AUCKLAND', 'INTL', 'AIRPORT', 'LTD', '2,373.00', '-', '-', '-'], ['CNE100000221', 'BEIJING', 'AIRPORT', '2,400.00', '-', '-', '-'], ['US2044096012', 'CEMIG', 'SA', '274.00', '-', '-', '-'], ['CNE100001T80', 'CGN', 'POWER', 'CO', 'LTD-H', '149.00', '-', '-', '-'], ['US16411R2085', 'CHENIERE', 'ENERGY', 'INC', '59.00', '-', '-', '-'], ['CNE100000HD4', 'CHINA', 'LONGYUAN', 'POWER', 'GROUP-H', '600.00', '-', '-', '-'], ['HK0144000764', 'CHINA', 'MERCHANTS', 'HOLD', '2,000.00', '-', '-', '-'], ['HK2380027329', 'CHINA', 'POWER', '956.00', '-', '-', '-'], ['US2091151041', 'CONSOLIDATED', 'EDISON', 'INC', '57.00', '-', '-', '-'], ['US21037T1097', 'CONSTELLATION', 'ENERGY', '52.00', '-', '-', '-'], ['BMG2442N1048', 'COSCO', 'Pacific', 'Ltd', '2,600.00', '-', '-', '-'], ['BMG2109G1033', 'China', 'Gas', 'Holdings', 'Ltd', '400.00', '-', '-', '-'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
-stock_list_4 = [['329180', '현대중공업', '23.00', '3,174,000', '3,059,000', '0.61'], ['003240', '태광산업', '3.00', '2,988,000', '2,886,000', '0.58'], ['051910', 'LG화학', '5.00', '2,915,000', '2,810,000', '0.56'], ['006400', '삼성SDI', '5.00', '2,800,000', '2,745,000', '0.55'], ['010130', '고려아연', '5.00', '2,785,000', '2,730,000', '0.54'], ['000210', 'DL', '39.00', '2,761,200', '2,718,300', '0.54'], ['004370', '농심', '10.00', '2,755,000', '2,680,000', '0.53'], ['051900', 'LG생활건강', '4.00', '2,688,000', '2,660,000', '0.53'], ['128940', '한미약품', '9.00', '2,754,000', '2,655,000', '0.53'], ['114090', 'GKL', '180.00', '2,754,000', '2,628,000', '0.52'], ['180640', '한진칼', '44.00', '2,706,000', '2,626,800', '0.52'], ['034730', 'SK', '11.00', '2,711,500', '2,623,500', '0.52'], ['028050', '삼성엔지니어링', '110.00', '2,689,500', '2,623,500', '0.52'], ['000070', '삼양홀딩스', '33.00', '2,649,900', '2,620,200', '0.52'], ['036570', '엔씨소프트', '6.00', '2,742,000', '2,619,000', '0.52'], ['010950', 'S-Oil', '22.00', '2,673,000', '2,618,000', '0.52'], ['036460', '한국가스공사', '56.00', '2,693,600', '2,615,200', '0.52'], ['047810', '한국항공우주', '45.00', '2,614,500', '2,614,500', '0.52'], ['096770', 'SK이노베이션', '11.00', '2,684,000', '2,612,500', '0.52'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
-stock_list_5 = [['148070', 'KOSEF', '국고채10년', '189.00', '21,325,815', '21,350,385', '-'], ['365780', 'KINDEX', '국고채10년', '227.00', '20,344,875', '20,392,545', '-'], ['289670', 'ARIRANG', '국채선물10년', '371.00', '19,499,760', '19,490,485', '-'], ['429760', 'ARIRANG', '미국S&P500', '385.00', '4,007,850', '3,980,900', '-'], ['152100', 'ARIRANG', '200', '12.00', '397,560', '400,320', '-'], ['US46434G1031', 'ISHARES', 'CORE', 'MSCI', 'EMERGING', '124.00', '-', '-', '-'], ['US4642881175', 'ISHARES', 'INTERNATIONAL', 'TREASU', '53.00', '-', '-', '-'], ['US4642882819', 'ISHARES', 'JP', 'MORGAN', 'USD', 'EMERGI', '25.00', '-', '-', '-'], ['US4642863926', 'ISHARES', 'MSCI', 'WORLD', 'ETF', '118.00', '-', '-', '-'], ['KRD010010001', '원화현금', '-', '-', '7,663,607', '-'], ['CASH00000001', '설정현금액', '-', '-', '104,868,162', '-']]
-stock_list_6 = [['SWAP00000004', '스왑(NH투자증권)', '-', '425,990,471', '-', '-'], ['KRD010010001', '원화예금', '-', '-', '2,896,766', '-'], ['CASH00000001', '설정현금액', '-', '-', '428,887,237', '-']]
-stock_list_7 = [['086790', '하나금융지주', '445.00', '20,470,000', '19,891,500', '5.49'], ['316140', '우리금융지주', '1,395.00', '20,576,250', '19,599,750', '5.41'], ['055550', '신한지주', '481.00', '20,298,200', '19,504,550', '5.38'], ['005490', 'POSCO홀딩스', '69.00', '19,251,000', '18,492,000', '5.10'], ['267250', 'HD현대', '281.00', '18,321,200', '17,646,800', '4.87'], ['000810', '삼성화재', '82.00', '16,236,000', '15,990,000', '4.41'], ['105560', 'KB금융', '292.00', '16,176,800', '15,709,600', '4.33'], ['024110', '기업은행', '1,434.00', '15,558,900', '15,200,400', '4.19'], ['030200', 'KT', '408.00', '15,096,000', '14,932,800', '4.12'], ['032830', '삼성생명', '226.00', '14,712,600', '14,396,200', '3.97'], ['033780', 'KT&G', '172.00', '14,413,600', '14,310,400', '3.95'], ['016360', '삼성증권', '381.00', '14,630,400', '14,116,050', '3.89'], ['029780', '삼성카드', '387.00', '12,712,950', '12,384,000', '3.42'], ['001450', '현대해상', '373.00', '12,047,900', '11,824,100', '3.26'], ['011780', '금호석유', '74.00', '12,062,000', '11,655,000', '3.21'], ['005830', 'DB손해보험', '177.00', '11,221,800', '11,204,100', '3.09'], ['003410', '쌍용C&E', '1,413.00', '10,908,360', '10,710,540', '2.95'], ['138930', 'BNK금융지주', '1,406.00', '10,685,600', '10,404,400', '2.87'], ['005940', 'NH투자증권', '1,024.00', '10,393,600', '10,199,040', '2.81'], [], [], [], [], [], [], [], [], [], [], [], []]    
-stock_list_8 = [['US88579Y1010', '3M', 'CO', '165.00', '-', '-', '-'], ['US0028241000', 'ABBOTT', 'LABORATORIES', '512.00', '-', '-', '-'], ['US00287Y1091', 'ABBVIE', 'INC', '511.00', '-', '-', '-'], ['US0036541003', 'ABIOMED', 'INC', '13.00', '-', '-', '-'], ['IE00B4BNMY34', 'ACCENTURE', 'PLC-CL', 'A', '183.00', '-', '-', '-'], ['US00507V1098', 'ACTIVISION', 'BLIZZARD', 'INC', '226.00', '-', '-', '-'], ['US00724F1012', 'ADOBE', 'INC', '136.00', '-', '-', '-'], ['US00751Y1064', 'ADVANCE', 'AUTO', 'PARTS', 'INC', '18.00', '-', '-', '-'], ['US0079031078', 'ADVANCED', 'MICRO', 'DEVICES', '473.00', '-', '-', '-'], ['US00130H1059', 'AES', 'CORP', '193.00', '-', '-', '-'], ['US0010551028', 'AFLAC', 'INC', '174.00', '-', '-', '-'], ['US00846U1016', 'AGILENT', 'TECHNOLOGIES', 'INC', '87.00', '-', '-', '-'], ['US0091581068', 'AIR', 'PRODUCTS', '&', 'CHEMICALS', 'INC', '64.00', '-', '-', '-'], ['US00971T1016', 'AKAMAI', 'TECHNOLOGIES', 'INC', '47.00', '-', '-', '-'], ['US0116591092', 'ALASKA', 'AIR', 'GROUP', 'INC', '36.00', '-', '-', '-'], ['US0126531013', 'ALBEMARLE', 'CORP', '33.00', '-', '-', '-'], ['US0152711091', 'ALEXANDRIA', 'REAL', 'ESTATE', 'EQUIT', '42.00', '-', '-', '-'], ['US0162551016', 'ALIGN', 'TECHNOLOGY', 'INC', '21.00', '-', '-', '-'], ['IE00BFRT3W74', 'ALLEGION', 'PLC', '25.00', '-', '-', '-'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
-stock_list_9 = [['US0079031078', 'ADVANCED', 'MICRO', 'DEVICES', '184.00', '-', '-', '-'], ['US02079K3059', 'ALPHABET', 'INC-CL', 'A', '4.00', '-', '-', '-'], ['US02079K1079', 'ALPHABET', 'INC-CL', 'C', '4.00', '-', '-', '-'], ['US0326541051', 'ANALOG', 'DEVICES', '128.00', '-', '-', '-'], ['US03662Q1058', 'ANSYS', 'INC', '66.00', '-', '-', '-'], ['US0378331005', 'APPLE', 'Inc', '128.00', '-', '-', '-'], ['US0382221051', 'APPLIED', 'MATERIALS', 'INC', '155.00', '-', '-', '-'], ['USN070592100', 'ASML', 'HOLDING', '31.00', '-', '-', '-'], ['GB00BZ09BD16', 'ATLASSIAN', 'CA', '73.00', '-', '-', '-'], ['US0527691069', 'AUTODESK', 'Inc', '97.00', '-', '-', '-'], ['US00724F1012', 'Adobe', 'Inc', '46.00', '-', '-', '-'], ['US0567521085', 'BAIDU', 'INC', '139.00', '-', '-', '-'], ['US11135F1012', 'BROADCOM', 'LTD', '34.00', '-', '-', '-'], ['US1924461023', 'COGNIZANT', 'TECH', 'SOLUTIONS-A', '226.00', '-', '-', '-'], ['US22788C1053', 'CROWDSTRIKE', 'HOLDINGS', 'INC', '-', 'A', '100.00', '-', '-', '-'], ['US1273871087', 'Cadence', 'Design', 'Systems', 'Inc', '134.00', '-', '-', '-'], ['US23804L1035', 'DATADOG', 'INC', '-', 'CLASS', 'A', '149.00', '-', '-', '-'], ['US2561631068', 'DOCUSIGN', 'INC', '235.00', '-', '-', '-'], ['US3373451026', 'FIRST', 'TRUST', 'NASDQ100', 'TECH', '477.00', '-', '-', '-'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
-stock_list_10 = [['055550', '신한지주', '986.00', '36,728,500', '36,777,800', '9.27'], ['105560', 'KB금융', '745.00', '34,977,750', '35,238,500', '8.89'], ['005490', 'POSCO홀딩스', '137.00', '31,510,000', '32,674,500', '8.24'], ['028260', '삼성물산', '230.00', '27,945,000', '28,060,000', '7.08'], ['323410', '카카오뱅크', '772.00', '22,735,400', '23,623,200', '5.96'], ['086790', '하나금융지주', '590.00', '22,626,500', '22,980,500', '5.79'], ['096770', 'SK이노베이션', '120.00', '21,300,000', '21,660,000', '5.46'], ['316140', '우리금융지주', '1,501.00', '17,486,650', '17,861,900', '4.50'], ['034730', 'SK', '79.00', '16,550,500', '17,103,500', '4.31'], ['034020', '두산에너빌리티', '908.00', '16,661,800', '16,707,200', '4.21'], ['003550', 'LG', '197.00', '15,464,500', '15,917,600', '4.01'], ['000810', '삼성화재', '72.00', '14,508,000', '14,148,000', '3.57'], ['003490', '대한항공', '492.00', '12,349,200', '12,521,400', '3.16'], ['032830', '삼성생명', '195.00', '12,168,000', '12,382,500', '3.12'], ['010950', 'S-Oil', '97.00', '9,845,500', '9,894,000', '2.49'], ['010130', '고려아연', '20.00', '9,620,000', '9,810,000', '2.47'], ['047810', '한국항공우주', '163.00', '8,280,400', '8,361,900', '2.11'], ['086280', '현대글로비스', '43.00', '7,869,000', '7,847,500', '1.98'], ['035250', '강원랜드', '288.00', '7,675,200', '7,574,400', '1.91'], [], [], [], [], [], [], [], [], [], [], [], []]
-stock_list_11 = [['095570', 'AJ네트웍스', '33.00', '235,950', '0', '-'], ['006840', 'AK홀딩스', '9.00', '188,100', '0', '-'], ['027410', 'BGF', '67.00', '346,390', '0', '-'], ['282330', 'BGF리테일', '12.00', '2,202,000', '0', '-'], ['138930', 'BNK금융지주', '224.00', '1,740,480', '0', '-'], ['001040', 'CJ', '20.00', '1,672,000', '0', '-'], ['079160', 'CJ', 'CGV', '28.00', '756,000', '0', '-'], ['000120', 'CJ대한통운', '16.00', '2,008,000', '0', '-'], ['011150', 'CJ씨푸드', '26.00', '101,530', '0', '-'], ['097950', 'CJ제일제당', '10.00', '3,975,000', '0', '-'], ['000590', 'CS홀딩스', '1.00', '64,700', '0', '-'], ['012030', 'DB', '142.00', '134,190', '0', '-'], ['016610', 'DB금융투자', '30.00', '175,500', '0', '-'], ['005830', 'DB손해보험', '49.00', '3,185,000', '0', '-'], ['000990', 'DB하이텍', '31.00', '2,126,600', '0', '-'], ['139130', 'DGB금융지주', '117.00', '1,015,560', '0', '-'], ['001530', 'DI동일', '20.00', '473,000', '0', '-'], ['000210', 'DL', '14.00', '952,000', '0', '-'], ['001880', 'DL건설', '15.00', '357,750', '0', '-'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
+warnings.simplefilter(action='ignore', category=FutureWarning) # FutureWaring 제거
 
-print(stock_list_4)
-for temp_list in stock_list_4:
-    if len(temp_list) > 6:
-        temp_list[1]=" ".join(temp_list[1:-4])
-        del temp_list[2:-4]
-print(stock_list_4)
+x = ecal.get_calendar("XKRX")
 
-# df = pd.DataFrame({},columns=['종목코드','구성종목명','주식수(계약수)','평가금액','시가총액','시가총액기준구성비중'])
-# for i in range(len(stock_list)):
-#     df.loc[i]=stock_list[i]
-# df.to_csv('C:\self_project\\acceleration_download_file\Download_data\pdf_files\\test.csv',index=False)
-# print(df)
+# 포트폴리오 클래스 생성
+class Portfolio():
+    """
+    포트폴리오 클래스 입니다
+    추가적으로 백테스트 결과 반환하는 메소드들 개별로 추가해서 작성해야 합니다!
+    """
+    
+    # 객체 생성할 때 초기화하는 매소드 입니다
+    def __init__(self,portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money):
+        """
+        포트폴리오 아이디를 데이터베이스에서 받는 부분은 구현 필요 합니다
+        오류를 출력하는 부분(print(error))들은 예외 처리로 수정 필요합니다.
+        입력받은 값들을 데이터베이스에 업데이트 하는 부분 구현이 필요합니다
+        
+        Args:
+            portfolio_name (str): 포트폴리오명
+            strategy_count (int: 포트폴리오를 구성하는 전략의 개수
+            start_time (str): 조회 시작날짜
+            end_time (str): 조회 끝날짜
+            rebalance_cycle (int): 리밸런싱하는 주기(달별로)
+            input_type (str): MF,ML,YF,YL 식으로 매달,매초,연초,연말 등의 타입을 입력받을 수 있습니다
+            input_money (int): 납입금액, 한번 납입할 때 얼마씩 납입하는 지 입력
+        """
+        
+        # 포트폴리오아이디 생성
+        self.portfolio_id='123456' # 추후 수정 필요
+        
+        # 포트폴리오명 입력받음
+        self.portfolio_name = portfolio_name
+        
+        # 구성 전략 개수 입력받기
+        if strategy_count<=5:
+            self.strategy_count=strategy_count
+        elif strategy_count>5: 
+            print('error!') # 추후 수정 필요
+            
+        # 구성 전략 개수 별 비율 입력 받기
+        self.strategy_ratio=list()
+        for i in range(self.strategy_count):
+            strategy_ratio=int(input('{}번째 전략은 포트폴리오의 몇 퍼센트? '.format(i+1)))
+            self.strategy_ratio.append(strategy_ratio)
+            
+        if sum(self.strategy_ratio)!=100:
+            print('error') # 추후 수정 필요
+            
+        # 포트폴리오 시작날짜, 끝날짜 입력받음(둘다 str 형태)
+        self.start_time=start_time
+        self.end_time=end_time
+        
+        # 리밸런싱 주기 입력받음
+        self.rebalance_cycle = rebalance_cycle
+        
+        # 납입방법 입력 받음
+        self.input_type = input_type
+        
+        # 납입금액 입력받음
+        self.input_money = input_money
+        
+        # 데이터베이스에 업데이트하는 부분 - sql 쿼리문
+        pass # 추후 수정 필요
+    
+    # 메인함수에서 '백테스트'에 사용할 '포트폴리오 객체 정보'들을 넘겨주는 매소드
+    def returnToBacktest(self):
+        return self.portfolio_id, self.strategy_ratio, self.start_time, self.end_time, self.rebalance_cycle, self.input_type, self.input_money
+              
+# 전략 클래스 생성
+class Strategy():
+    """
+    전략 클래스 입니다
+    """
+    
+    # 객체 생성할 때 초기화하는 매소드 입니다
+    def __init__(self,strategy_kind, product_count_per_strategy):
+        """
+
+        Args:
+            strategy_kind (str): 전략종류(ex-'PER 저')를 입력 받음
+            product_count_per_strategy (int): 한 전략에 해당하는 금융상품들 개수
+        """
+        
+        self.strategy_kind=strategy_kind
+        self.product_count_per_strategy = product_count_per_strategy
+        
+    # 전략의 시작날짜와 끝날짜를 반영하는 메소드
+    # def getStratgyDate(self):
+    #     return self.start_time,self.end_time
+        
+        
+    # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문  반환하는 매소드
+    def getProductListQuery(self):
+        """
+        평가지표(전략종류, 전략구성금융상품개수)들에 따라서 쿼리문들을 추가해야 한다 -> 추가 및 수정필요!!
+        날짜는 지정이 안되어 있는 쿼리문을 반환 합니다!
+        """
+        
+        if self.strategy_kind == 'PER 저':
+            # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
+            self.sql_query='select product_date,product_ticker from product_evaluate order by per asc limit '+str(self.product_count_per_strategy)
+        
+        elif self.strategy_kind == 'PER 고':
+            # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
+            self.sql_query='select product_date,product_ticker from product_evaluate order by per desc limit '+str(self.product_count_per_strategy)
+        
+        elif self.strategy_kind == 'PBR 저':
+            # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
+            self.sql_query='select product_date,product_ticker from product_evaluate order by pbr asc limit '+str(self.product_count_per_strategy)
+            
+        elif self.strategy_kind == 'PBR 고':
+        # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
+            self.sql_query='select product_date,product_ticker from product_evaluate order by pbr desc limit '+str(self.product_count_per_strategy)
+            
+        # 위에서의 'PER 저', 'PER 고' 같이 모든 평가 지표들 마다 쿼리문을 작성할 것
+        pass
+        
+        return self.strategy_kind,self.sql_query
+
+# 백테스트 함수 생성
+def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, 
+                portfolio_end_time, rebalance_cycle, input_type, input_money, 
+                strategy_kinds, stratgy_sql_query_list):
+    """
+    백테스트를 하는 함수
+    백테스트를 직접하는 부분은 추가 구현 필요합니다!
+    1-1. 납입하는 날짜들을 계산하는 부분 구현 필요!
+    1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요
+    테스트로 생성한, 납입날짜, 리밸런싱날짜들, 사이날짜들을 테스트용이 아닌 실제로 치환해야 한다
+    PortfolioInfo()를 통해서 PortfolioHistory() 와 PortfolioAccount() 도 만들어야 한다
+    Args:
+        portfolio_id (str): 포트폴리오 아이디
+        strategy_ratio (list): 포트폴리오를 구성하는 전략별 비율, len()을 통해서 전략의 개수도 후에 구할 수 있음
+        start_time (str): 조회 시작날짜
+        end_time (str): 조회 끝날짜
+        rebalance_cycle (int): 리밸런싱 주기
+        input_type (str): 포트폴리오에서 금액 납입 방법
+        input_money (int): 포트폴리오에서 납입 금액 액수
+        strategy_kinds (list): Strategy에서 받아온 전략들 종류들
+        stratgy_sql_query_list (list): Strategy에서 받아온 쿼리문들
+    """
+    
+    
+    
+    
+    
+    # 1-2. 리밸런싱 하는 날짜들을 계산하는 부분 구현 필요 - test_start_rebalance_dates를 대체
+    rebalance_date_list = list()
+    
+    
+    
+    
+    # 처음 시작하는 금액 -> 초기금액이 없을 경우 0원으로 계산해야 함
+    test_start_rebalance_input_money = 1000000
+    
+
+
+    getDailyDateInfo(portfolio_start_time, portfolio_end_time)
+    # 시작날짜와 끝날짜 사이에 존채하는 모든 날짜들을 담은 리스트
+    test_dates = getDailyDateInfo(portfolio_start_time, portfolio_end_time)
+    print('테스트날짜들 :', test_dates)
+    
+    
+    
+    # 1-1. 납입하는 날짜들을 계산하는 부분 구현 필요 - test_input_date_lists를 대체
+    input_date_list = getPayInDateInfo(portfolio_start_time, portfolio_end_time, 'first') # first, 
+    print('input_date_list :', input_date_list)
+    
+    
+    print('rebalance_date_list :',rebalance_date_list)
+    
+    
+    
+
+# 포트폴리오 생성하기 위해서 내용을 입력받는 함수
+def makePortfolio():
+    portfolio_name = input("포트폴리오명은? : ")
+    strategy_count = int(input("포트폴리오의 구성 전략 개수는? : "))
+    start_time = input("백테스트 시작날짜(ex 2022-01-01) : ")
+    end_time = input("백테스트 끝날짜(ex 2022-01-01) : ")
+    rebalance_cycle = int(input("리밸런싱 주기(달 기준) : "))
+    input_type = input("주기적으로 납입하는 방식 선택 : ")
+    input_money = int(input("주기적으로 납입하는 금액 입력 : "))
+    return portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money
+   
+# 전략을 생성하기 위해서 내용을 입력받는 함수
+def makeStrategy(i):
+    strategy_kind = input(str(i+1)+"번째 전략 종류를 입력하세요(ex PER 저, PBR 저) : ")
+    product_count = int(input("전략의 구성 금융상품 개수를 입력하세요 : "))
+    return strategy_kind, product_count
+
+# 시작날짜, 끝날짜 입력받은면 그 사이 개장일들을 반환해줌
+def getDailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든 개장일 반환
+    a = x.sessions_in_range(start_date, end_date,)
+    rtList = []
+
+    for i in a:
+        rtList.append(i.strftime('%Y-%m-%d'))
+
+    return rtList
+
+# 납입방법에 따라 날짜 계산해주는 함수(월초납입, 월말납입 중 하나 선택)
+def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월초 or 월말)
+    rtList = []
+    if interval == "first":
+        a = list(rrule(MONTHLY, byweekday=(MO, TU, WE, TH, FR),
+                       bysetpos=1,
+                       dtstart=parse(start_date),
+                       until=parse(end_date)))  # 지정된 기간의 매월 첫 평일 (월초)
+        for i in a:
+            if not x.is_session(i):  # 개장일이 아닌 날이 있는지 check
+                i = x.next_open(i)  # 다음 개장일
+            rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+        return rtList  # 납입 예정일 리스트 출력
+
+    else:
+        a = list(rrule(MONTHLY,
+                       byweekday=(MO, TU, WE, TH, FR),
+                       bysetpos=-1,
+                       dtstart=parse(start_date),
+                       until=parse(end_date)))  # 지정된 기간의 매월 마지막 평일
+
+        for i in a:
+            if not x.is_session(i):  # 개장일이 아닌 날이 있는지 check
+                i = x.previous_open(i)  # 직전 개장일
+            rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+        return rtList  # 납입 예정일 리스트 출력
+
+    
+# 실행하는 부분이 메인함수이면 실행 
+if __name__ == "__main__":
+    # 'makePortfoili() 함수' 를 이용해서 '포트폴리오 입력 변수'들을 생성
+    portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money=makePortfolio()
+    # '포트폴리오 입력 변수'와 'Portfolio() 클래스'를 이용해서 '포트폴리오 객체' 생성
+    portfolio_1=Portfolio(portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money) # 포트폴리오면, 구성전략개수, 시작날짜, 끝날짜, 리밸런싱주기(달), 납입방법, 주기적납부금액
+    
+    
+    strategy_list = list() # '포트폴리오'를 구성하는 '전략'들을 담을 '전략 리스트' 생성, '전략리스트' == '포트폴리오' 라고 생각해도 무관
+    for i in range(strategy_count): # '포트폴리오'를 구성하는 '전략의 개수'만큼 반복
+        strategy_kind, product_count = makeStrategy(i) # 'makeStrategy() 함수'를 이용해서 '전략종류(PER 저 등)'와 '전략으로 선택할 금융상품 개수'를 입력받음
+        strategy_list.append(Strategy(strategy_kind, product_count)) # 'Strategy() 클래스'를 이용해서 생성한 '전략'들을 '전략 리스트'에 추가
+    
+    # 접속하기 - 해당 데이터 베이스에 접속
+    db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
+    snowball=db.cursor() 
+
+    # 백테스트 함수 사용하기 위해서 리스트들 생성
+    stratgy_kind_list = list() # '전략종류들을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류'들이 담김
+    stratgy_sql_query_list = list() # '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들이 담김
+    for strategy_object in strategy_list: # '전략리스트' 에 있는 모든 '전략'들에 대해서 반복
+        stratgy_kind_list.append(strategy_object.getProductListQuery()[0]) # '전략'의 '전략종류'을 '전략종류들을 담을 리스트'에 추가
+        stratgy_sql_query_list.append(strategy_object.getProductListQuery()[1]) # '전략'의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'을 해당 리스트에 추가
+    
+    
+    # 백테스트 함수 실행
+    backTesting(*portfolio_1.returnToBacktest(), stratgy_kind_list, stratgy_sql_query_list)
+    db.close()  
