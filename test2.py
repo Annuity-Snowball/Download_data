@@ -2,7 +2,7 @@ import pandas as pd
 import getDatainfo
 from datetime import datetime
 
-df = pd.read_csv("C:\self_project\snowball\Download_data\\ad.csv")
+df = pd.read_csv("ad.csv")
 code_list = list(df['code'])
 date_list = list(df['date'])
 
@@ -24,9 +24,23 @@ for i in range(len(code_list)):
     payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'first')
 
 print(payinDate_dict_bm)
+#
+""" for i in range(len(code_list)):
+    dailyDate_dict[code_list[i]] = getDailyDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'))
+print(dailyDate_dict)
+"""
+
+for i in range(len(code_list)):
+    payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'first')
 
 # 매달 말 나오는것
 # for i in range(len(code_list)):
 #     payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'last')
 
 # print(payinDate_dict_lm)
+list1 = []
+list2 = []
+for stock_code in payinDate_dict_bm.keys():
+    for search_date in payinDate_dict_bm[stock_code]:
+        list1.append(stock_code)
+        list2.append(search_date)
