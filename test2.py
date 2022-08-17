@@ -22,9 +22,10 @@ print(dailyDate_dict)
 for i in range(len(code_list)):
     payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'first')
 
-print(payinDate_dict_bm)
 
-for i in range(len(code_list)):
-    payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'last')
-
-print(payinDate_dict_lm)
+list1 = []
+list2 = []
+for stock_code in payinDate_dict_bm.keys():
+    for search_date in payinDate_dict_bm[stock_code]:
+        list1.append(stock_code)
+        list2.append(search_date)
