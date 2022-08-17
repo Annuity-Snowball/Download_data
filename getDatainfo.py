@@ -26,20 +26,16 @@ for i in holiday:
 def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월초 or 월말)
     rtList = []
     if interval == "first":
-        ruleset = rruleset()
-        ruleset.rrule(rrule(MONTHLY, byweekday=(MO, TU, WE, TH, FR),
+        a = list(rrule(MONTHLY,
+                       byweekday=(MO, TU, WE, TH, FR),
                        bysetpos=1,
                        dtstart=parse(start_date),
-                       until=parse(end_date)
-                       ))
+                       until=parse(end_date)))  # 지정된 기간의 매월 마지막 평일
 
-        a = list(ruleset)  # 지정된 기간의 매월 첫 평일 (월초)
-
-        for j in a:
-            if i in holiday:
-                i = x.next_open(i)
+        for i in a:
+            if not x.is_session(i):  # 개장일이 아닌 날이 있는지 check
+                i = x.previous_open(i)  # 직전 개장일
             rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
-
         return rtList  # 납입 예정일 리스트 출력
 
     else:
@@ -108,4 +104,30 @@ def getRebalanceDateInfo(start_date, end_date, interval):  # 리밸런싱 날짜
             rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
         return rtList  # 납입 예정일 리스트 출력
 
-print(getDailyDateInfo('2015-01-01', '2022-01-01'))
+
+df = pd.read_csv("ad.csv")
+code_list = list(df['code'])
+date_list = list(df['date'])
+
+dailyDate_dict = dict()
+payinDate_dict_bm = dict()
+payinDate_dict_lm = dict()
+
+#for i in range(len(code_list)):
+    #product_dict[code_list[i]] = date_list[i]
+
+#
+""" for i in range(len(code_list)):
+    dailyDate_dict[code_list[i]] = getDailyDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'))
+print(dailyDate_dict)
+"""
+
+for i in range(len(code_list)):
+    payinDate_dict_bm[code_list[i]] = getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'first')
+
+print(payinDate_dict_bm)
+
+for i in range(len(code_list)):
+    payinDate_dict_bm[code_list[i]] = getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'last')
+
+print(payinDate_dict_lm)
