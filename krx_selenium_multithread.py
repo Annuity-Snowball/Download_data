@@ -9,6 +9,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import csv
+import getDatainfo
+from datetime import datetime
 
 
 Initial_path="C:\self_project\snowball\Download_data\pdf_files"
@@ -90,6 +92,7 @@ def crawling_selenium(product_code,product_date):
     
     # 파일로 저장하는 부분 후보2
     fields = ['종목코드','구성종목명','주식수(계약수)','평가금액','시가총액','시가총액기준구성비중']
+    product_date = ''.join(product_date.split('-'))
     with open('C:\self_project\snowball\Download_data\pdf_files\\'+str(product_code)+'_'+str(product_date)+'.csv', 'w',newline='') as f:  
         # using csv.writer method from CSV package
         write = csv.writer(f)  
@@ -101,12 +104,26 @@ def crawling_selenium(product_code,product_date):
 
 # 실행하는 코드의 위치가 여기일 경우 실행
 if __name__ == '__main__':
+    
+    df = pd.read_csv("C:\self_project\snowball\Download_data\\ad.csv")
+    code_list = list(df['code'])
+    date_list = list(df['date'])
+    payinDate_dict_bm = dict()
+    
+    for i in range(len(code_list)):
+        payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'first')
+    
+    product_code_list = []
+    product_date_list = []
+    for stock_code in payinDate_dict_bm.keys():
+        for search_date in payinDate_dict_bm[stock_code]:
+            product_code_list.append(stock_code)
+            product_date_list.append(search_date)
+            
     start_time = time.time()
     
-    product_code_list = [395750,269530,295820,429740,433850,161510] # [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
-    product_date_list = [20220705,20220607,20220613,20220705,20220805,20220613] # [395750,269530,295820,429740,433850,161510,189400,429760,287180,280920,227830]
-    # with context 구문 사용
+   # with context 구문 사용
     with ThreadPoolExecutor(max_workers=4) as executor:
-        executor.map(crawling_selenium, product_code_list, product_date_list)
+        executor.map(crawling_selenium, product_code_list[:10], product_date_list[:10])
         
     print("--- %s seconds ---" % (time.time() - start_time))
