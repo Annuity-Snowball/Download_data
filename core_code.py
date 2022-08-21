@@ -2,6 +2,8 @@ from datetime import date, timedelta
 import pymysql
 import copy
 
+from Download_data.getDatainfo import getDailyDateInfo, getPayInDateInfo, getRebalanceDateInfo
+
 # 포트폴리오 클래스 생성
 class Portfolio():
     """
@@ -154,16 +156,17 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     rebalance_date_list = list()
     
     # 시작날짜와 끝날짜 사이에 존채하는 모든 날짜들을 담은 리스트
-    test_dates=['2021-01-01','2021-01-15','2021-02-01','2021-02-15','2021-03-01','2021-03-15','2021-04-01','2021-04-15','2021-05-01','2021-05-15','2021-06-01','2021-06-15','2021-07-01','2021-07-15','2021-08-01']
+    test_dates=getDailyDateInfo(portfolio_start_time, portfolio_end_time)
     
     # 리벨러스를 하는 날짜들 리스트(테스트용)
-    test_start_rebalance_dates=['2021-01-01','2021-03-01','2021-05-01'] # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
+    test_start_rebalance_dates=getRebalanceDateInfo(portfolio_start_time, portfolio_end_time, input_type, rebalance_cycle) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
     
     # 처음 시작하는 금액 -> 초기금액이 없을 경우 0원으로 계산해야 함
-    test_start_rebalance_input_money = 1000000
+    test_start_rebalance_input_money=int(input("초기금액을 입력하세요 :"))
+    # test_start_rebalance_input_money = 1000000
     
     # 납입하는 날짜들을 담은 리스트(테스트용)
-    test_input_date_lists=['2021-02-01','2021-03-01','2021-04-01','2021-05-01','2021-06-01','2021-07-01'] # 납입한 날짜는 첫번째 날짜는 포함X
+    test_input_date_lists=getPayInDateInfo(portfolio_start_time, portfolio_end_time, input_type) # 납입한 날짜는 첫번째 날짜는 포함X
     
     
     
