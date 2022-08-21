@@ -113,3 +113,15 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
 # date2 = getRebalanceDateInfo('2022-08-21', '2026-08-21', 1, 1)
 # for i in date2:
 #     print(i)
+
+test_date = getDailyDateInfo('2020-01-02','2022-07-01')
+print(test_date[:10]) # '2020-01-02' 부터 시작해야 한다
+
+test_start_rebalance_dates=getRebalanceDateInfo('2020-01-02', '2022-07-01', 0, 4) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
+print(test_start_rebalance_dates)  # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다 '2020-01-02' 부터 시작해야 한다
+
+test_input_date_lists= getPayInDateInfo('2020-01-01', '2022-07-01', 'first') # 납입한 날짜는 첫번째 날짜는 포함X
+print(test_input_date_lists) # 납입한 날짜는 첫번째 날짜는 포함X, 그 다음에 납입하는 달인 '2020-02-01' 부터 시작해야 한다
+                             # 납입하는 첫번째 달은 '초기금액'으로 설정할거여서 다음달부터 계산이 되어야 한다
+    
+
