@@ -101,15 +101,3 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
             rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
         return rtList  # 납입 예정일 리스트 출력
 
-
-for i in range(len(holiday)):
-    holiday[i]= datetime.strptime(holiday[i], '%Y-%m-%d')
-
-print(type(holiday[0]))
-#date = getRebalanceDateInfo('2022-08-21', '2026-08-21', 0, 1)
-#for i in date:
-#   print(i)
-
-date2 = getRebalanceDateInfo('2022-08-21', '2026-08-21', 1, 1)
-for i in date2:
-    print(i)
