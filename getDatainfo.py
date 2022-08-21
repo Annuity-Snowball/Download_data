@@ -24,7 +24,7 @@ holiday = ['2022-01-31', '2022-02-01', '2022-02-02', '2022-03-01', '2022-03-09',
            '2026-02-16', '2026-02-17', '2026-02-18', '2026-03-02', '2026-05-01', '2026-05-05', '2026-08-17']
 
 
-print(holiday)
+# print(holiday)
 def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월초 or 월말)
     rtList = []
     if interval == "first":
@@ -74,12 +74,12 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
                        bysetpos=1,
                        dtstart=parse(start_date),
                        until=parse(end_date)))  # 지정된 기간의 매월 첫 평일 (월초)
-
+        rtList.append(start_date)
         for i in a:
             while ((i in holiday) or i.weekday() == 5 or i.weekday() == 6):  # 개장일이 아닌 날이 있는지 check
                     dif_day = relativedelta(days=1)
-                    print(i)
-                    print(1)
+                    # print(i)
+                    # print(1)
                     i = i+dif_day # 다음 개장일
             rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
         return rtList  # 납입 예정일 리스트 출력
@@ -91,13 +91,37 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
                        bysetpos=-1,
                        dtstart=parse(start_date),
                        until=parse(end_date)))  # 지정된 기간의 매월 첫 평일 (월초)
-
+        rtList.append(start_date)
         for i in a:
             while ((i in holiday) or i.weekday() == 5 or i.weekday() == 6):  # 개장일이 아닌 날이 있는지 check
                     dif_day = relativedelta(days=1)
-                    print(i)
-                    print(1)
+                    # print(i)
+                    # print(1)
                     i = i-dif_day # 다음 개장일
             rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
         return rtList  # 납입 예정일 리스트 출력
+
+
+# for i in range(len(holiday)):
+#     holiday[i]= datetime.strptime(holiday[i], '%Y-%m-%d')
+
+# print(type(holiday[0]))
+#date = getRebalanceDateInfo('2022-08-21', '2026-08-21', 0, 1)
+#for i in date:
+#   print(i)
+
+# date2 = getRebalanceDateInfo('2022-08-21', '2026-08-21', 1, 1)
+# for i in date2:
+#     print(i)
+
+test_date = getDailyDateInfo('2020-01-02','2022-07-01')
+print(test_date[:10]) # '2020-01-02' 부터 시작해야 한다
+
+test_start_rebalance_dates=getRebalanceDateInfo('2020-01-02', '2022-07-01', 0, 4) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
+print(test_start_rebalance_dates)  # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다 '2020-01-02' 부터 시작해야 한다
+
+test_input_date_lists= getPayInDateInfo('2020-01-01', '2022-07-01', 'first') # 납입한 날짜는 첫번째 날짜는 포함X
+print(test_input_date_lists) # 납입한 날짜는 첫번째 날짜는 포함X, 그 다음에 납입하는 달인 '2020-02-01' 부터 시작해야 한다
+                             # 납입하는 첫번째 달은 '초기금액'으로 설정할거여서 다음달부터 계산이 되어야 한다
+    
 
