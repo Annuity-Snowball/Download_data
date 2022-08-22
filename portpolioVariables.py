@@ -4,6 +4,8 @@ import numpy as np
 import datetime as dt
 from pandas.tseries.offsets import *
 
+# 일별 수익률: (오늘종가 - 어제 종가) / (어제 종가) -1
+
 p_apple = yf.download('AAPL', start='2019-01-01')
 p_google = yf.download('GOOGL', start='2019-01-01')
 
