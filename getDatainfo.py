@@ -63,8 +63,8 @@ def getDailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든
     rtList = []
 
     for i in a:
-        rtList.append(i.strftime('%Y-%m-%d'))
-
+        rtList.append(datetime.fromtimestamp(i.strftime('%Y-%m-%d')))
+    print("type of daily date: ", type(rtList[0]))
     return rtList
 
 def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸런싱 날짜 계산 (월초 or 월말)

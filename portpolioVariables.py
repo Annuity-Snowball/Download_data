@@ -4,53 +4,26 @@ import numpy as np
 import datetime as dt
 from pandas.tseries.offsets import *
 
-p_apple = yf.download('AAPL', start='2019-01-01')
-p_google = yf.download('GOOGL', start='2019-01-01')
+#Test portpolio variables from stock data
 
-# Merge the tow tables above (표 병합)
-p_apple = p_apple[['Adj Close']].rename(columns={'Adj Close': 'Close_Apple'})
-p_google = p_google[['Adj Close']].rename(columns={'Adj Close': 'Close_Google'})
+#Download price data from yfinance (가격 데이터 다운로드)
+p_apple = yf.download('AAPL',start = '2019-01-01')
+p_google = yf.download('GOOGL',start = '2019-01-01')
+
+#Extract Adj close price
+p_apple = p_apple[['Adj Close']].rename(columns = {'Adj Close':'Close_Apple'})
+p_google = p_google[['Adj Close']].rename(columns = {'Adj Close':'Close_Google'})
 
 price = pd.concat([p_apple, p_google], axis=1)
 
-start_date = price['Date'].astype(str).iloc[0]
-end_date = price['Date'].astype(str).iloc[-1]
+#1) daily returns = (today price - previous price) / (previous price) - 1
+ptc_ret = price.pct_change(1).dropna() # dropna(): Eliminate NaN Value
+ptc_ret = ptc_ret.rename(columns={'Close_Apple':'Ret_Apple', 'Close_Google': 'Ret_Google'})
+print(ptc_ret.head())
 
-date_all = pd.date_range(start_date, end_date, freq='D').to_frame().rename(columns={0: 'Date'}).reset_index(drop=True)
+#2) cumulative returns (
 
-# Merge with price data (데이터 병합)
-price_all = pd.merge(date_all, price, how='left')
-price_all = price_all.fillna(method='ffill')
+gross_ret = ptc_ret+1 # gross return: 총 수익률
+cum_ret = gross_ret.cumprod() - 1 #누적곱
 
-#Generate day of week variables (요일 이름 변수 생성)
-price_all['Day_Name'] = price_all['Date'].dt.day_name()
-
-#Get Monday prices (월요일 가격만 뽑아내기)
-price_mon = price_all[price_all['Day_Name']=='Monday']
-
-# Set index and remove the Day Name columns (index 설정 및 Day_Name column 삭제)
-price_mon = price_mon.set_index(['Date']).drop(['Day_Name'], axis=1)
-
-# Monday close-to-Monday close weekly returns (월요일 종가-월요일 종가 주간 수익률)
-week_mon_ret = price_mon.pct_change(1).dropna()
-
-# Get Wednesday prices (수요일 가격만 뽑아내기)
-price_wed = price_all[price_all['Day_Name'] == 'Wednesday']
-
-# Set index and remove the Day Name columns (index 설정 및 Day_Name column 삭제)
-price_wed = price_wed.set_index(['Date']).drop(['Day_Name'], axis=1)
-
-# Wednesday close-to-Wednesday close weekly returns (수요일 종가-수요일 종가 주간 수익률)
-week_wed_ret = price_wed.pct_change(1).dropna()
-
-#Generate end of month data (월말 날짜 생성)
-month_end = pd.date_range(start_date, end_date, freq='M')
-
-#Get only end of month prices (월말 가격 데이터 생성)
-price_month = price_all[price_all['Date'].isin(month_end)].reset_index(drop=True)
-
-# Set index and remove the Day Name columns (index 설정 및 Day_Name column 삭제)
-price_month = price_month.set_index(['Date']).drop(['Day_Name'], axis=1)
-
-# Monthly returns (월 수익률)
-month_ret = price_month.pct_change(1).dropna()
+print(cum_ret.head())
