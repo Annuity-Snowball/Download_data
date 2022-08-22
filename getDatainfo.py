@@ -63,8 +63,8 @@ def getDailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든
     rtList = []
 
     for i in a:
-        rtList.append(i.strftime('%Y-%m-%d'))
-
+        rtList.append(datetime.fromtimestamp(i.strftime('%Y-%m-%d')))
+    print("type of daily date: ", type(rtList[0]))
     return rtList
 
 def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸런싱 날짜 계산 (월초 or 월말)
@@ -105,6 +105,12 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
         return rtList  # 납입 예정일 리스트 출력
 
 
+        for i in a:
+            if not x.is_session(i):  # 개장일이 아닌 날이 있는지 check
+                i = x.previous_open(i)  # 직전 개장일
+            rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+        return rtList  # 납입 예정일 리스트 출력
+
 # for i in range(len(holiday)):
 #     holiday[i]= datetime.strptime(holiday[i], '%Y-%m-%d')
 
@@ -117,23 +123,23 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
 # for i in date2:
 #     print(i)
 
-test_date = getDailyDateInfo('2020-01-01','2022-07-01')
-print(test_date[:10]) # '2020-01-02' 부터 시작해야 한다
-print()
+# test_date = getDailyDateInfo('2020-01-01','2022-07-01')
+# print(test_date[:10]) # '2020-01-02' 부터 시작해야 한다
+# print()
 
-test_start_rebalance_dates=getRebalanceDateInfo('2020-01-31', '2022-07-01', 0, 4) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
-print(test_start_rebalance_dates)# 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다 '2020-01-02' 부터 시작해야 한다, 마지막 날이 리밸런싱 날짜면 제외
-print()
+# test_start_rebalance_dates=getRebalanceDateInfo('2020-01-31', '2022-07-01', 0, 4) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
+# print(test_start_rebalance_dates)# 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다 '2020-01-02' 부터 시작해야 한다, 마지막 날이 리밸런싱 날짜면 제외
+# print()
 
-test_start_rebalance_dates=getRebalanceDateInfo('2020-01-31', '2022-07-01', 1, 4)
-print(test_start_rebalance_dates)
-print()
+# test_start_rebalance_dates=getRebalanceDateInfo('2020-01-31', '2022-07-01', 1, 4)
+# print(test_start_rebalance_dates)
+# print()
 
-test_input_date_lists= getPayInDateInfo('2020-01-01', '2022-07-01', 'first') # 납입한 날짜는 첫번째 날짜는 포함X
-print(test_input_date_lists) # 납입한 날짜는 첫번째 날짜는 포함X, 그 다음에 납입하는 달인 '2020-02-01' 부터 시작해야 한다
-                             # 납입하는 첫번째 달은 '초기금액'으로 설정할거여서 다음달부터 계산이 되어야 한다\
+# test_input_date_lists= getPayInDateInfo('2020-01-01', '2022-07-01', 'first') # 납입한 날짜는 첫번째 날짜는 포함X
+# print(test_input_date_lists) # 납입한 날짜는 첫번째 날짜는 포함X, 그 다음에 납입하는 달인 '2020-02-01' 부터 시작해야 한다
+#                              # 납입하는 첫번째 달은 '초기금액'으로 설정할거여서 다음달부터 계산이 되어야 한다\
 
-test_input_date_lists= getPayInDateInfo('2020-01-15', '2022-07-01', 'last') # 납입한 날짜는 첫번째 날짜는 포함X
-print(test_input_date_lists) # 납입한 날짜는 첫번째 날짜는 포함X, 그 다음에 납입하는 달인 '2020-02-01' 부터 시작해야 한다
-                             # 납입하는 첫번째 달은 '초기금액'으로 설정할거여서 다음달부터 계산이 되어야 한다\
+# test_input_date_lists= getPayInDateInfo('2020-01-15', '2022-07-01', 'last') # 납입한 날짜는 첫번째 날짜는 포함X
+# print(test_input_date_lists) # 납입한 날짜는 첫번째 날짜는 포함X, 그 다음에 납입하는 달인 '2020-02-01' 부터 시작해야 한다
+#                              # 납입하는 첫번째 달은 '초기금액'으로 설정할거여서 다음달부터 계산이 되어야 한다\
 
