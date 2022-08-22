@@ -13,9 +13,9 @@ x = ecal.get_calendar("XKRX")  # 한국 증시 코드
 
 
 # print(holiday)
-def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월초: 0, 월말: 1)
+def getPayInDateInfo(start_date, end_date, month_type):  # 납입일 계산 (월초: 0, 월말: 1)
     rtList = []
-    if interval == '0':
+    if month_type == '0':
         a = list(rrule(MONTHLY,
                        byweekday=(MO, TU, WE, TH, FR),
                        bysetpos=1,
@@ -30,7 +30,7 @@ def getPayInDateInfo(start_date, end_date, interval):  # 납입일 계산 (월�
             del rtList[0]
         return rtList  # 납입 예정일 리스트 출력
 
-    elif interval == '1' :
+    elif month_type == '1' :
         a = list(rrule(MONTHLY,
                        byweekday=(MO, TU, WE, TH, FR),
                        bysetpos=-1,
