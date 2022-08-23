@@ -21,7 +21,7 @@ payinDate_dict_bm = dict()
 
 # 매달 초 나오는 것
 for i in range(len(code_list)):
-    payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), 'first')
+    payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i], datetime.today().strftime('%Y-%m-%d'), '0')
 
 # print(payinDate_dict_bm)
 
@@ -39,3 +39,6 @@ for stock_code in payinDate_dict_bm.keys():
 print(len(list1))
 print()
 print(len(list2))
+print(list1[:10])
+print()
+print(list2[:10])
