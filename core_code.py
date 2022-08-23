@@ -2,7 +2,7 @@ from datetime import date, timedelta
 import pymysql
 import copy
 
-from Download_data.getDatainfo import getDailyDateInfo, getPayInDateInfo, getRebalanceDateInfo
+from getDatainfo import getDailyDateInfo, getPayInDateInfo, getRebalanceDateInfo
 
 # 포트폴리오 클래스 생성
 class Portfolio():
@@ -157,17 +157,16 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     # 시작날짜와 끝날짜 사이에 존채하는 모든 날짜들을 담은 리스트
     test_dates=getDailyDateInfo(portfolio_start_time, portfolio_end_time)
-    
+
     # 리벨러스를 하는 날짜들 리스트(테스트용)
     test_start_rebalance_dates=getRebalanceDateInfo(portfolio_start_time, portfolio_end_time, input_type, rebalance_cycle) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
-    
+
     # 처음 시작하는 금액 -> 초기금액이 없을 경우 0원으로 계산해야 함
     test_start_rebalance_input_money=int(input("초기금액을 입력하세요 :"))
     # test_start_rebalance_input_money = 1000000
     
     # 납입하는 날짜들을 담은 리스트(테스트용)
     test_input_date_lists=getPayInDateInfo(portfolio_start_time, portfolio_end_time, input_type) # 납입한 날짜는 첫번째 날짜는 포함X
-    
     
     
     total_balance_account=dict() # 날짜 별로 남은 잔액들 히스토리
@@ -667,7 +666,7 @@ if __name__ == "__main__":
         strategy_list.append(Strategy(strategy_kind, product_count)) # 'Strategy() 클래스'를 이용해서 생성한 '전략'들을 '전략 리스트'에 추가
     
     # 접속하기 - 해당 데이터 베이스에 접속
-    db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
+    db = pymysql.connect(host='localhost', port=3306, user='root', passwd='xogus99', db='snowball_database', charset='utf8')
     snowball=db.cursor() 
 
     # 백테스트 함수 사용하기 위해서 리스트들 생성

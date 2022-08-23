@@ -16,7 +16,7 @@ import random
 Initial_path = "C:\self_project\snowball\Download_data\pdf_files"
 
 # 크롬 드라이버가 설치된 파일경로 설정
-chromedriver = "C:/Users/pth99/OneDrive/Desktop/chromedriver.exe"  # 윈도우
+chromedriver = 'C:/Users/th/Desktop/webdriver/chromedriver.exe' # 윈도우
 
 # 파일 다운로드 위치 설정을 위한 코드
 chromeOptions = webdriver.ChromeOptions()  # 크롬 드라이버 옵션 설정
@@ -94,7 +94,7 @@ def crawling_selenium(product_code, product_date):
     # 파일로 저장하는 부분 후보2
     fields = ['종목코드', '구성종목명', '주식수(계약수)', '평가금액', '시가총액', '시가총액기준구성비중']
     product_date = ''.join(product_date.split('-'))
-    with open('C:\Data\Pdf_files\\' + str(product_code) + '_' + str(product_date) + '.csv', 'w', newline='') as f:
+    with open('D:\Data\pdf_files_ex\\' + str(product_code) + '_' + str(product_date) + '.csv', 'w', newline='') as f:
         # using csv.writer method from CSV package
         write = csv.writer(f)
         write.writerow(fields)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     for i in range(len(code_list)):
         payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i],
-                                                                       datetime.today().strftime('%Y-%m-%d'), 'first')
+                                                                       datetime.today().strftime('%Y-%m-%d'), '0')
 
     product_code_list = []
     product_date_list = []

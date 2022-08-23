@@ -4,7 +4,7 @@ import datetime
 import random
 
 # 2. 접속하기 - 해당 데이터 베이스에 접속
-db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
+db = pymysql.connect(host='localhost', port=3306, user='root', passwd='xogus99', db='snowball_database', charset='utf8')
 
 
 # 기간동안의 모든 날짜들을 구하기 위한 함수
