@@ -66,7 +66,7 @@ def crawling_selenium(product_code, product_date):
     rand5 = random.randrange(3, 6)
     time.sleep(rand5)
 
-    # 금융상품의 구성 종목 조회 - 일단 10개의 종목만 받아옴
+    # 금융상품의 구성 종목 조회
     stock_list = list()
     stock_infos = driver_chrome.find_elements(By.CSS_SELECTOR,
                                               '#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr')
