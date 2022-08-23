@@ -58,10 +58,12 @@ def crawling_selenium(product_code,product_date):
     
     # 금융상품의 구성 종목 조회 - 일단 10개의 종목만 받아옴
     stock_list=list()
-    for i in range(1,11):
-        stock_info = driver_chrome.find_element(By.CSS_SELECTOR,'#jsMdiContent > div > div.CI-GRID-AREA.CI-GRID-ON-WINDOWS > div.CI-GRID-WRAPPER > div.CI-GRID-MAIN-WRAPPER > div.CI-GRID-BODY-WRAPPER > div > div > table > tbody > tr:nth-child('+str(i)+')')
-        stock_list.append(stock_info.text.split())
-    print(stock_list)
+    stock_infos = driver_chrome.find_elements(By.XPATH,'//*[@id="jsMdiContent"]/div/div[1]/div[1]/div[1]/div[2]/div/div/table/tbody/tr')
+    # print(stock_infos)
+    print(len(stock_infos))
+    for i in range(len(stock_infos)):
+        test = driver_chrome.find_elements(By.XPATH,'//*[@id="jsMdiContent"]/div/div[1]/div[1]/div[1]/div[2]/div/div/table/tbody/tr['+str(i+1)+']')
+        print(test[0].text)
     
     # 드라이버 종료     
     driver_chrome.quit()
