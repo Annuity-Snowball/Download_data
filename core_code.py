@@ -293,7 +293,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             
             # 포트폴리오 가치 총합을 갱신
             test_key = list(total_portfolio_account.keys())[-1]
-            print('test_key :',test_key)
+            # print('test_key :',test_key)
             test_start_rebalance_input_money=total_portfolio_account[test_key]
             
             total_balance_account[test_date] = balance_amount
