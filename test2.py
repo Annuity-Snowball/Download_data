@@ -2,7 +2,7 @@ import pandas as pd
 import getDatainfo
 from datetime import datetime
 
-df = pd.read_csv("C:\self_project\snowball\Download_data\\ad.csv")
+df = pd.read_csv("ad.csv")
 code_list = list(df['code'])
 date_list = list(df['date'])
 
@@ -39,6 +39,8 @@ for stock_code in payinDate_dict_bm.keys():
 print(len(list1))
 print()
 print(len(list2))
+print(list1[:10])
+print()
 print(list1[:10])
 print()
 print(list2[:10])
