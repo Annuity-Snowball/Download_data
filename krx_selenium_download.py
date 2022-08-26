@@ -17,8 +17,12 @@ import csv
 import threading
 import random
 
+
+# 필독!!!!!!!!!!!
+# 여기에 '파일을 저장할 폴더의 경로' 수정!!!
 Initial_path="C:\self_project\snowball\Download_data\pdf_files"
 
+# 필독!!!!!!!!!!!
 # 크롬 드라이버가 설치된 파일경로 설정
 chromedriver = 'C:/Users/LG/dev_python/Webdriver/chromedriver.exe' # 윈도우 
 
@@ -110,6 +114,8 @@ def crawling_selenium(product_code,product_date):
 
 if __name__ == '__main__':
     
+    # 필독!!!!
+    # ad.csv 파일이 있는 경로로 수정 필요!
     df = pd.read_csv("C:\self_project\snowball\Download_data\\ad.csv")
     code_list = list(df['code'])
     date_list = list(df['date'])
@@ -128,5 +134,12 @@ if __name__ == '__main__':
             
             
     _lock = threading.Lock()
+    # 필독!!!!
+    # max_workers의 개수는 컴퓨터 사양에 맞게 수정하면 됨!! 10개정도로 하면 될듯?
+    # max_workers의 개수가 많을 수록 동시에 띄우는 창이 많아짐!
     with ThreadPoolExecutor(max_workers=5) as executor:
+        # 필독!!!
+        # produt_code_list[] 와 product_date_list[] 슬라이싱들은 범위를 같게해서 해야함
+        # 1050부터 시작하는 이유는 문환룡이 1050개까지는 다운로드를 했기 때문!
+        # 범위 수정해가면서 실행하거나 [1050:] 으로 해서 나머지 한번에 다 다운 가능하면 그렇게 해도 됨!
         executor.map(crawling_selenium, product_code_list[1050:2000], product_date_list[1050:2000])
