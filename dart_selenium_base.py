@@ -43,7 +43,8 @@ def crawling_selenium(product_code,start_date):
     time.sleep(1)
     
     # 공시유형 선택
-    kind_button = driver_chrome.find_element(By.CSS_SELECTOR,'#li_01 > label:nth-child(1)> img').click()
+    kind_button = driver_chrome.find_element(By.CSS_SELECTOR,'#li_01 > label:nth-child(1)> img')
+    kind_button.click()
     
     time.sleep(1)
     
@@ -52,6 +53,29 @@ def crawling_selenium(product_code,start_date):
     search_button.send_keys(Keys.ENTER)
     
     time.sleep(1)
+    
+    
+    # 모든 보고서들을 for문으로 돌려야 할듯?
+    stock_report_list = driver_chrome.find_elements(By.CSS_SELECTOR,'#tbody > tr')
+    for stock_report in stock_report_list[:1]:
+        financial_report_link = stock_report.find_element(By.CSS_SELECTOR,'td:nth-child(3)>a')
+        print(financial_report_link.get_attribute('href')) # financial_report_link.get_attribute('href') 는 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20220816001711' 등의 사이트가 나옴!
+        
+        # 새로운 사이트에서의 드라이버 생성
+        driver_financial = webdriver.Chrome(executable_path=chromedriver, options=chromeOptions)
+        driver_financial.get(financial_report_link.get_attribute('href')) # 사이트를 연다
+        time.sleep(2)
+        
+        financial_report_info = driver_financial.find_element(By.ID,'19_anchor')
+        financial_report_info.click()
+        time.sleep(2)
+        
+        print('-----------------') # 이부분에서 오류가 뜸...ㄴ
+        financial_report_info2 = financial_report_info.find_element(By.CLASS_NAME,'section-2')
+        print(financial_report_info2)
+        print('-----------------')
+        time.sleep(2)
+        driver_financial.quit()
     
     # 드라이버 종료     
     driver_chrome.quit()
