@@ -174,7 +174,6 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     total_portfolio_account = dict() # 날짜 별로 잔액을 제외한 포트폴리오 가치 히스토리
     
-    test_product_count=None # 최근 포트폴리오 구성 금융상품 개수(납입X,리밸런싱날X, 그러나 조회를 해야 할 때 사용)
     
     balance_amount = 0 # 잔액 총합
     
@@ -198,19 +197,17 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print("==================================")
             print(rebalance_date, "리밸런싱")
             print("==================================")
-            portfolio_rebalance_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, rebalance_date)
-            print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_rebalance_product_price)
-            portfolio_current_rebalance_product_price = copy.deepcopy(portfolio_rebalance_product_price) # getPortfolioProductPrice() 을 위해서 deepcopy 사용, 안하면 변수를 바꾸는 부분이 다른 파트에 있어서 의도대로 안됨
-            
+            # 리밸런싱 할 때 구매할 금융상품들 가격 구함
+            portfolio_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, rebalance_date)
+            print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_product_price)
             
             print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
             
-            rebalance_balance_account,portfolio_rebalance_product_count = getPortfolioRabalanceInfo(portfolio_rebalance_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio)
-            test_product_count=copy.deepcopy(portfolio_rebalance_product_count)
-            print('리밸런싱 후 금융상품들 개수 :', portfolio_rebalance_product_count)
+            rebalance_balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio)
+            print('리밸런싱 후 금융상품들 개수 :', portfolio_product_count)
             print("리밸런싱 후 잔액 :", rebalance_balance_account)
             
-            portfolio_rebalance_product_value=getPortfolioProductValue(portfolio_rebalance_product_price,portfolio_rebalance_product_count)
+            portfolio_rebalance_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
             print('리밸런싱 후 금융상품들 가치 :',portfolio_rebalance_product_value)
             
             portfolio_rebalance_strategy_value=getPortfolioStrategyValue(portfolio_rebalance_product_value)
@@ -234,17 +231,15 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print("==================================")
             print(test_date, "납입날짜")
             print("==================================")
-            portfolio_product_price=getPortfolioProductPrice(portfolio_current_rebalance_product_price, test_date)
+            portfolio_product_price=getPortfolioProductPrice(portfolio_product_price, test_date)
             print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
-            portfolio_current_rebalance_product_price = copy.deepcopy(portfolio_product_price) # getPortfolioProductPrice() 을 위해서 deepcopy 사용, 안하면 변수를 바꾸는 부분이 다른 파트에 있어서 의도대로 안됨
             print('주기적 납부하는 돈 :', input_money)
             
-            input_balance_account,portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
+            input_balance_account,new_portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
             print('납부때마다 추가되는 금융상품 개수 :',portfolio_product_count)
             print('납부때마다 추가되는 잔액 :',input_balance_account)
             
-            portfolio_product_count = getPortfolioProductAccumulateCount(test_product_count,portfolio_product_count)
-            test_product_count=copy.deepcopy(portfolio_product_count)
+            portfolio_product_count = getPortfolioProductAccumulateCount(portfolio_product_count,new_portfolio_product_count)
             print('누적 금융상품 개수 :',portfolio_product_count)
             
             portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
@@ -258,9 +253,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
             
             # 포트폴리오 가치 총합을 갱신
-            test_key = list(total_portfolio_account.keys())[-1]
-            print('test_key :',test_key)
-            test_start_rebalance_input_money=total_portfolio_account[test_key]
+            last_date = list(total_portfolio_account.keys())[-1]
+            test_start_rebalance_input_money=total_portfolio_account[last_date]
             
             total_balance_account=getBalaceAccumulate(input_balance_account,total_balance_account)
             print('누적 후 잔액기록 :',total_balance_account)
@@ -273,15 +267,13 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print("==================================")
             print(test_date, "나머지경우")
             print("==================================")
-            # print('rebalnce_date',rebalance_date)
-            portfolio_product_price=getPortfolioProductPrice(portfolio_current_rebalance_product_price, test_date)
+            portfolio_product_price=getPortfolioProductPrice(portfolio_product_price, test_date)
             print(test_date,'금융상품 가격 :',portfolio_product_price)
-            portfolio_current_rebalance_product_price = copy.deepcopy(portfolio_product_price) # getPortfolioProductPrice() 을 위해서 deepcopy 사용, 안하면 변수를 바꾸는 부분이 다른 파트에 있어서 의도대로 안됨
+           
+            portfolio_product_count=changeDateDictKey(portfolio_product_count,test_date)
+            print(test_date,'금융상품 개수 :',portfolio_product_count)
             
-            test_product_count=changeDateDictKey(test_product_count,test_date)
-            print(test_date,'금융상품 개수 :',test_product_count)
-            
-            portfolio_product_value=getPortfolioProductValue(portfolio_product_price,test_product_count)
+            portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
             print(test_date,'금융상품들 가치 :',portfolio_product_value)
             
             portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
@@ -292,9 +284,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             print(test_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account)
             
             # 포트폴리오 가치 총합을 갱신
-            test_key = list(total_portfolio_account.keys())[-1]
-            # print('test_key :',test_key)
-            test_start_rebalance_input_money=total_portfolio_account[test_key]
+            last_date = list(total_portfolio_account.keys())[-1]
+            test_start_rebalance_input_money=total_portfolio_account[last_date]
             
             total_balance_account[test_date] = balance_amount
             print('누적 후 잔액기록 :',total_balance_account)
@@ -303,14 +294,11 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     print()
     real_portfolio_account=getRealPortfolioValue(total_portfolio_account,total_balance_account)
     print('포트폴리오 가치 추이(잔액포함X):',total_portfolio_account)
+    print()
     print('잔액추이', total_balance_account)
+    print()
     print('포트폴리오 가치 추이(잔액포함0):',real_portfolio_account)
     
-# 시작날짜, 끝날짜, 간격을 입력받으면 중간날짜들을 반환해주는 함수
-def getDateInfo(start_date,end_date,interval):
-    
-    
-    pass
  
 # 날짜지정이 안되어 있는 쿼리문에서 날짜를 지정하는 부분을 추가해서 반환하는 함수 - 리밸런싱 날짜들을 받자!
 def getProductTicker(sql_query,interval_dates):
@@ -386,14 +374,14 @@ def getProductPrice(product_date,product_ticker):
   
 # 주기적으로 납입한 날의 새로 구매한 금융상품들 가격을 반환- 고정납입금액에 사용 
 def getPortfolioProductPrice(portfolio_rebalance_product_price, test_date):
-    
-    for strategy_kind_dict in portfolio_rebalance_product_price:
+    product_price = copy.deepcopy(portfolio_rebalance_product_price)
+    for strategy_kind_dict in product_price:
         for strategy_kind_key in strategy_kind_dict.keys():
             temp = strategy_kind_dict[strategy_kind_key]
             temp[test_date] = temp.pop(list(temp.keys())[0])
             for i,product_list in enumerate(temp[test_date]):
                 temp[test_date][i] = getProductPrice(test_date,product_list[0])
-    return portfolio_rebalance_product_price
+    return product_price
 
 # 주기적으로 납입한 날의 새로 구매한 금융상품들 개수을 반환 - 
 def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
@@ -443,7 +431,11 @@ def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
     return input_balance_account,portfolio_product_count
 
 # 누적되는 금융상품개수 구하는 함수
-def getPortfolioProductAccumulateCount(portfolio_rebalance_product_count,portfolio_product_count):
+def getPortfolioProductAccumulateCount(Portfolio_rebalance_product_count,Portfolio_product_count):
+    
+    portfolio_rebalance_product_count = copy.deepcopy(Portfolio_rebalance_product_count)
+    portfolio_product_count = copy.deepcopy(Portfolio_product_count)
+    
     for i in range(len(portfolio_product_count)):
         product_strategy_key=list(portfolio_product_count[i].keys())[0]
         product_strategy_value=portfolio_product_count[i][product_strategy_key]
@@ -559,10 +551,12 @@ def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_
     return rebalance_balance_account, portfolio_rebalance_product_count
 
 # 포트폴리오 내 새로 구매한 금융상품들 가치 반환
-def getPortfolioProductValue(product_value,product_count):
-    for i in range(len(product_value)):
-        price_strategy_key=list(product_value[i].keys())[0]
-        price_strategy_value=product_value[i][price_strategy_key]
+def getPortfolioProductValue(portfolio_rebalance_product_price,portfolio_rebalance_product_count):
+    product_price = copy.deepcopy(portfolio_rebalance_product_price)
+    product_count = copy.deepcopy(portfolio_rebalance_product_count)
+    for i in range(len(product_price)):
+        price_strategy_key=list(product_price[i].keys())[0]
+        price_strategy_value=product_price[i][price_strategy_key]
         strategy_value_keys=list(price_strategy_value.keys())
         
         count_strategy_value=product_count[i][price_strategy_key]
@@ -573,10 +567,11 @@ def getPortfolioProductValue(product_value,product_count):
             
             for i in range(len(price_lists)):
                 price_lists[i][1] = price_lists[i][1] * count_lists[i][1]
-    return(product_value)
+    return(product_price)
 
 # 포트폴리오 내 전략별 가치 반환
-def getPortfolioStrategyValue(product_value):
+def getPortfolioStrategyValue(portfolio_rebalance_product_value):
+    product_value = copy.deepcopy(portfolio_rebalance_product_value)
     for i in range(len(product_value)):
         price_strategy_key=list(product_value[i].keys())[0]
         price_strategy_value=product_value[i][price_strategy_key]
@@ -592,7 +587,8 @@ def getPortfolioStrategyValue(product_value):
     return(product_value)
 
 # 포트폴리오 내 가치반환(잔액포함X?)
-def getPortfolioValue(portfolio_strategy_value):
+def getPortfolioValue(portfolio_rebalance_strategy_value):
+    portfolio_strategy_value = copy.deepcopy(portfolio_rebalance_strategy_value)
     portfolio_value=dict()
 
     # 전략별로 반복
