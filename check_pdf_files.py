@@ -6,7 +6,7 @@ from datetime import datetime
 import os
 
 # 다운받은 파일들을 확인
-file_list = os.listdir('C:\\Users\\LG\\Desktop\\sangsu_file\\pdf_files')
+file_list = os.listdir('C:\\Users\\LG\\Desktop\\pdf_files')
 for i,file_name in enumerate(file_list):
     file_list[i] = file_name.split('.')[0]
 print('다운받은 파일 개수 :', len(file_list))
