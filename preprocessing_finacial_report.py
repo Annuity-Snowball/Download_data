@@ -442,22 +442,22 @@ df_2016_4Q_BS.to_csv('C:\\Users\\LG\\Desktop\\result\\2016_4Q_BS.csv', index=Fal
 
 # 2017년 부터 for 문으로 실행
 bs_info_list = [
-                ['2017_1Q_BS.txt','당기 1분기말','2017_1Q_BS.csv'],
-                ['2017_2Q_BS.txt','당기 반기말','2017_2Q_BS.csv'],
-                ['2017_3Q_BS.txt','당기 3분기말','2017_3Q_BS.csv'],
-                ['2017_4Q_BS.txt','당기','2017_4Q_BS.csv'],
+                # ['2017_1Q_BS.txt','당기 1분기말','2017_1Q_BS.csv'],
+                # ['2017_2Q_BS.txt','당기 반기말','2017_2Q_BS.csv'],
+                # ['2017_3Q_BS.txt','당기 3분기말','2017_3Q_BS.csv'],
+                # ['2017_4Q_BS.txt','당기','2017_4Q_BS.csv'],
                 
-                ['2018_1Q_BS.txt','당기 1분기말','2018_1Q_BS.csv'],
-                ['2018_2Q_BS.txt','당기 반기말','2018_2Q_BS.csv'],
-                ['2018_3Q_BS.txt','당기 3분기말','2018_3Q_BS.csv'],
-                ['2018_4Q_BS.txt','당기','2018_4Q_BS.csv'],
+                # ['2018_1Q_BS.txt','당기 1분기말','2018_1Q_BS.csv'],
+                # ['2018_2Q_BS.txt','당기 반기말','2018_2Q_BS.csv'],
+                # ['2018_3Q_BS.txt','당기 3분기말','2018_3Q_BS.csv'],
+                # ['2018_4Q_BS.txt','당기','2018_4Q_BS.csv'],
                 
-                ['2019_1Q_BS.txt','당기 1분기말','2019_1Q_BS.csv'],
-                ['2019_2Q_BS.txt','당기 반기말','2019_2Q_BS.csv'],
-                ['2019_3Q_BS.txt','당기 3분기말','2019_3Q_BS.csv'],
-                ['2019_4Q_BS.txt','당기','2019_4Q_BS.csv'],
+                # ['2019_1Q_BS.txt','당기 1분기말','2019_1Q_BS.csv'],
+                # ['2019_2Q_BS.txt','당기 반기말','2019_2Q_BS.csv'],
+                # ['2019_3Q_BS.txt','당기 3분기말','2019_3Q_BS.csv'],
+                # ['2019_4Q_BS.txt','당기','2019_4Q_BS.csv'],
                 
-                ['2020_1Q_BS.txt','당기 1분기말','2020_1Q_BS.csv'],
+                # ['2020_1Q_BS.txt','당기 1분기말','2020_1Q_BS.csv'],
                 ['2020_2Q_BS.txt','당기 반기말','2020_2Q_BS.csv'],
                 ['2020_3Q_BS.txt','당기 3분기말','2020_3Q_BS.csv'],
                 ['2020_4Q_BS.txt','당기','2020_4Q_BS.csv'],
@@ -508,7 +508,17 @@ for bs_info in bs_info_list:
     # df_basic.to_csv("C:\self_project\snowball\Download_data\\stock_code_info1.csv",index=False,encoding="utf-8-sig") 
 
     # 2. 20161Q 대차대조표에서 유동자산, 비유동자산 등 필요한 지표들을 항목코드 컬럼을 통해 선택해서 추출
-    df_basic =df_basic[(df_basic['항목코드'] == 'ifrs_CurrentAssets')|(df_basic['항목코드'] == 'ifrs_Assets')|(df_basic['항목코드'] == 'ifrs_CurrentLiabilities')|(df_basic['항목코드'] == 'ifrs_Liabilities')] 
+    current_assets = ['ifrs_CurrentAssets','ifrs-full_CurrentAssets']
+    assets = ['ifrs_Assets', 'ifrs-full_Assets']
+    current_liabilities = ['ifrs_CurrentLiabilities', 'ifrs-full_CurrentLiabilities']
+    liabilities = ['ifrs_Liabilities', 'ifrs-full_Liabilities']
+    
+    if bs_info[0].split('_')[0] == '2016' or bs_info[0].split('_')[0] == '2017' or bs_info[0].split('_')[0] == '2018' or bs_info[0].split('_')[0] == '2019':
+        i=0 #i는 current_assests 등 표현을 위해서 사용되는 변수
+    else:
+        i=1
+    df_basic =df_basic[(df_basic['항목코드'] == current_assets[i])|(df_basic['항목코드'] == assets[i])|(df_basic['항목코드'] == current_liabilities[i])|(df_basic['항목코드'] == liabilities[i])] 
+    
 
     column_list = list(df_basic['항목코드'].unique()) # 결과 데이터프레임의 컬럼들을 설정
     column_list.append('결산기준일') # 컬럼 '결산기준일'dmf cnrk
@@ -525,37 +535,38 @@ for bs_info in bs_info_list:
 
 
     # 결과데이터프레임 결측치확인
-    check_null_frame = df_BS[df_BS['ifrs_CurrentAssets'].isnull() | df_BS['ifrs_Assets'].isnull() | df_BS['ifrs_CurrentLiabilities'].isnull() | df_BS['ifrs_Liabilities'].isnull()].copy()
+    check_null_frame = df_BS[df_BS[current_assets[i]].isnull() | df_BS[assets[i]].isnull() | df_BS[current_liabilities[i]].isnull() | df_BS[liabilities[i]].isnull()].copy()
     # print(null_stock_code)
 
-    # 결측치를 매칭하는 함수 부분
-    null_dict = dict() # 결측치들의 종목코드와 어떤 지표가 결측치인지 매칭 시키는 딕셔너리 생성
-    def func2(df):
-        if df.name not in null_dict:   
-            null_dict[df.name] = list(df[df.isnull()==True].index)
-    check_null_frame.apply(func2)
-    del null_dict['결산기준일'] # 결산기준일은 결측치가 없으므로 제거
-    # print(null_dict) # ex) {'ifrs_CurrentAssets': ['000040', '089230', '048770', '036260', '114120', '115160'], 'ifrs_Assets': ['096760', '004990', '095270', '053300', '079430'], 'ifrs_CurrentLiabilities': ['000040', '089230', '048770', '004990', '036260', '115160'], 'ifrs_Liabilities': ['067290', '025000', '004990', '145210', '053300']}
+    if len(check_null_frame) >0:
+        # 결측치를 매칭하는 함수 부분
+        null_dict = dict() # 결측치들의 종목코드와 어떤 지표가 결측치인지 매칭 시키는 딕셔너리 생성
+        def func2(df):
+            if df.name not in null_dict:   
+                null_dict[df.name] = list(df[df.isnull()==True].index)
+        check_null_frame.apply(func2)
+        del null_dict['결산기준일'] # 결산기준일은 결측치가 없으므로 제거
+        # print(null_dict) # ex) {'ifrs_CurrentAssets': ['000040', '089230', '048770', '036260', '114120', '115160'], 'ifrs_Assets': ['096760', '004990', '095270', '053300', '079430'], 'ifrs_CurrentLiabilities': ['000040', '089230', '048770', '004990', '036260', '115160'], 'ifrs_Liabilities': ['067290', '025000', '004990', '145210', '053300']}
 
 
 
 
-    for null_category in null_dict: # null_dict의 key값들에 대해서 반복
-        if null_category == 'ifrs_CurrentAssets': # 결측치 카테고리가 'ifrs_CurrentAssets' 일때,
-            category_name_list = ['유동자산','유동 자산']
-        elif null_category == 'ifrs_Assets':
-            category_name_list = ['자산총계','자산 총계']
-        elif null_category == 'ifrs_CurrentLiabilities':
-            category_name_list = ['유동부채', '유동 부채']
-        elif null_category == 'ifrs_Liabilities':
-            category_name_list = ['부채총계', '부채 총계']
-            
-        for null_stock_code in null_dict[null_category]: # 'ifrs_CurrentAssets' 에서 결측치를 가진 '종목코드'들을 추출
-            for category_name in category_name_list:
-                df_temp = df_base[df_base['종목코드']==null_stock_code] # 'ifrs_CurrentAssets' 으로 선택하지 못해서, 항목명으로 정보를 얻기위해 사용
-                df_temp = df_temp[df_temp['항목명'].str.strip() == category_name] # '항목명'이 category_name인 것을 선택
-                if len(df_temp) >0:
-                    df_BS.loc[null_stock_code][null_category] = df_temp.loc[df_temp.index[0]][bs_info[1]]
+        for null_category in null_dict: # null_dict의 key값들에 대해서 반복
+            if null_category == current_assets[i]: # 결측치 카테고리가 'ifrs_CurrentAssets' 일때,
+                category_name_list = ['유동자산','유동 자산']
+            elif null_category == assets[i]:
+                category_name_list = ['자산총계','자산 총계']
+            elif null_category == current_liabilities[i]:
+                category_name_list = ['유동부채', '유동 부채']
+            elif null_category == liabilities[i]:
+                category_name_list = ['부채총계', '부채 총계']
+                
+            for null_stock_code in null_dict[null_category]: # 'ifrs_CurrentAssets' 에서 결측치를 가진 '종목코드'들을 추출
+                for category_name in category_name_list:
+                    df_temp = df_base[df_base['종목코드']==null_stock_code] # 'ifrs_CurrentAssets' 으로 선택하지 못해서, 항목명으로 정보를 얻기위해 사용
+                    df_temp = df_temp[df_temp['항목명'].str.strip() == category_name] # '항목명'이 category_name인 것을 선택
+                    if len(df_temp) >0:
+                        df_BS.loc[null_stock_code][null_category] = df_temp.loc[df_temp.index[0]][bs_info[1]]
 
 
 
