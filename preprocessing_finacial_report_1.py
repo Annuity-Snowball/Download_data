@@ -134,8 +134,9 @@ def make_BS_file():
 
 
 
-
-                    
+        check_null_frame = df_BS[df_BS['CurrentAssets'].isnull() | df_BS['Assets'].isnull() | df_BS['CurrentLiabilities'].isnull() | df_BS['Liabilities'].isnull() | df_BS['결산기준일'].isnull()].copy()
+    
+        display(check_null_frame)            
         df_BS.columns = ['유동자산', '자산총계', '유동부채', '부채총계','결산기준일'] # 컬럼명들을 수정
         df_BS = df_BS.reset_index('종목코드') # 인덱스를 컬럼으로 초기화
         df_BS.to_csv('C:\\Users\\LG\\Desktop\\preprocessing_financial\\'+BS_info[2], index=False,encoding='cp949') # 파일로 저장
@@ -145,40 +146,40 @@ def make_BS_file():
 
 # 손익계산서 만드는 함수 - 추후에 함수로 덮어야 함!
 def make_PL_file():
-    # 2016년 부터 for 문으로 실행  - 1분기 누적, 혹은 3개월로 할 지 결정해야 함, 4Q는 당기 만 즉 당기누적만 제공함...
+    # 2016년 부터 for 문으로 실행  - 1분기 누적, 혹은 누적로 할 지 결정해야 함, 4Q는 당기 만 즉 당기누적만 제공함...
     PL_info_list = [
-                ['2016_1Q_PL.txt','당기 1분기 3개월','2016_1Q_PL.csv'],
-                ['2016_2Q_PL.txt','당기 반기 3개월','2016_2Q_PL.csv'],
-                ['2016_3Q_PL.txt','당기 3분기 3개월','2016_3Q_PL.csv'],
+                ['2016_1Q_PL.txt','당기 1분기 누적','2016_1Q_PL.csv'],
+                ['2016_2Q_PL.txt','당기 반기 누적','2016_2Q_PL.csv'],
+                ['2016_3Q_PL.txt','당기 3분기 누적','2016_3Q_PL.csv'],
                 ['2016_4Q_PL.txt','당기','2016_4Q_PL.csv'],
                 
-                ['2017_1Q_PL.txt','당기 1분기','2017_1Q_PL.csv'],
-                ['2017_2Q_PL.txt','당기 반기','2017_2Q_PL.csv'],
-                ['2017_3Q_PL.txt','당기 3분기','2017_3Q_PL.csv'],
+                ['2017_1Q_PL.txt','당기 1분기 누적','2017_1Q_PL.csv'],
+                ['2017_2Q_PL.txt','당기 반기 누적','2017_2Q_PL.csv'],
+                ['2017_3Q_PL.txt','당기 3분기 누적','2017_3Q_PL.csv'],
                 ['2017_4Q_PL.txt','당기','2017_4Q_PL.csv'],
                 
-                ['2018_1Q_PL.txt','당기 1분기','2018_1Q_PL.csv'],
-                ['2018_2Q_PL.txt','당기 반기','2018_2Q_PL.csv'],
-                ['2018_3Q_PL.txt','당기 3분기','2018_3Q_PL.csv'],
+                ['2018_1Q_PL.txt','당기 1분기 누적','2018_1Q_PL.csv'],
+                ['2018_2Q_PL.txt','당기 반기 누적','2018_2Q_PL.csv'],
+                ['2018_3Q_PL.txt','당기 3분기 누적','2018_3Q_PL.csv'],
                 ['2018_4Q_PL.txt','당기','2018_4Q_PL.csv'],
                 
-                ['2019_1Q_PL.txt','당기 1분기','2019_1Q_PL.csv'],
-                ['2019_2Q_PL.txt','당기 반기','2019_2Q_PL.csv'],
-                ['2019_3Q_PL.txt','당기 3분기','2019_3Q_PL.csv'],
+                ['2019_1Q_PL.txt','당기 1분기 누적','2019_1Q_PL.csv'],
+                ['2019_2Q_PL.txt','당기 반기 누적','2019_2Q_PL.csv'],
+                ['2019_3Q_PL.txt','당기 3분기 누적','2019_3Q_PL.csv'],
                 ['2019_4Q_PL.txt','당기','2019_4Q_PL.csv'],
                 
-                ['2020_1Q_PL.txt','당기 1분기','2020_1Q_PL.csv'],
-                ['2020_2Q_PL.txt','당기 반기','2020_2Q_PL.csv'],
-                ['2020_3Q_PL.txt','당기 3분기','2020_3Q_PL.csv'],
+                ['2020_1Q_PL.txt','당기 1분기 누적','2020_1Q_PL.csv'],
+                ['2020_2Q_PL.txt','당기 반기 누적','2020_2Q_PL.csv'],
+                ['2020_3Q_PL.txt','당기 3분기 누적','2020_3Q_PL.csv'],
                 ['2020_4Q_PL.txt','당기','2020_4Q_PL.csv'],
                 
-                ['2021_1Q_PL.txt','당기 1분기','2021_1Q_PL.csv'],
-                ['2021_2Q_PL.txt','당기 반기','2021_2Q_PL.csv'],
-                ['2021_3Q_PL.txt','당기 3분기','2021_3Q_PL.csv'],
+                ['2021_1Q_PL.txt','당기 1분기 누적','2021_1Q_PL.csv'],
+                ['2021_2Q_PL.txt','당기 반기 누적','2021_2Q_PL.csv'],
+                ['2021_3Q_PL.txt','당기 3분기 누적','2021_3Q_PL.csv'],
                 ['2021_4Q_PL.txt','당기','2021_4Q_PL.csv'],
                 
-                ['2022_1Q_PL.txt','당기 1분기','2022_1Q_PL.csv'],
-                ['2022_2Q_PL.txt','당기 반기','2022_2Q_PL.csv']
+                ['2022_1Q_PL.txt','당기 1분기 누적','2022_1Q_PL.csv'],
+                ['2022_2Q_PL.txt','당기 반기 누적','2022_2Q_PL.csv']
                 ]
     for PL_info in PL_info_list:
         print("start :",PL_info[0])
@@ -244,11 +245,11 @@ def make_PL_file():
 
             for null_category in null_dict: # null_dict의 key값들에 대해서 반복
                 if null_category == 'Revenue': # 결측치 카테고리가 'ifrs_CurrentAssets' 일때,
-                    category_name_list = ['매출액']
+                    category_name_list = ['영업수익']
                 elif null_category == 'OperatingIncomeLoss':
                     category_name_list = ['영업이익']
                 elif null_category == 'ProfitLoss':
-                    category_name_list = ['당기순이익', '연결당기순이익', '당기연결순이익', 'VIII. 당기순이익']
+                    category_name_list = ['당기순이익', '연결당기순이익', '당기연결순이익']
                     
                 for null_stock_code in null_dict[null_category]: # 'ifrs_CurrentAssets' 에서 결측치를 가진 '종목코드'들을 추출
                     for category_name in category_name_list:
@@ -260,11 +261,13 @@ def make_PL_file():
 
 
 
-                    
+        check_null_frame = df_PL[df_PL['Revenue'].isnull() | df_PL['OperatingIncomeLoss'].isnull() | df_PL['ProfitLoss'].isnull() | df_PL['결산기준일'].isnull()].copy()
+        display(check_null_frame)            
         df_PL.columns = ['매출액','영업이익','당기순이익','결산기준일'] # 컬럼명들을 수정
         df_PL = df_PL.reset_index('종목코드') # 인덱스를 컬럼으로 초기화
         df_PL.to_csv('C:\\Users\\LG\\Desktop\\preprocessing_financial\\'+PL_info[2], index=False,encoding='cp949') # 파일로 저장
 
     
     
-# make_bs_file()
+# make_BS_file()
+make_PL_file()
