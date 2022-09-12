@@ -13,4 +13,4 @@ for i in range(len(file_list)):
         df_2=pd.read_csv("C:\\Users\\LG\\Desktop\\report_PL\\"+file_list[i],delimiter="\t", encoding='cp949')
         df = pd.concat([df_1, df_2])
         file_name = '_'.join(file_list[i-1].split('_')[:3])
-        df.to_csv('C:\\Users\\LG\\Desktop\\financial_report\\'+file_name+'.csv', index=False,encoding='cp949') 
+        df.to_csv('C:\\Users\\LG\\Desktop\\after_report_PL\\'+file_name+'.csv', index=False,encoding='cp949') 
