@@ -97,3 +97,21 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
                 i = x.previous_open(i)  # 직전 개장일
             rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
         return rtList  # 납입 예정일 리스트 출력
+
+def getYearlyDateInfo(start_date, end_date):  # 납입일 계산 (월초: 0, 월말: 1)
+    rtList = []
+    a = list(rrule(YEARLY,
+        byweekday=(MO, TU, WE, TH, FR),
+        bysetpos=1,
+        dtstart=parse(start_date),
+        until=parse(end_date)))  # 지정된 기간의 매월 마지막 평일
+
+    for i in a:
+        if not x.is_session(i):  # 개장일이 아닌 날이 있는지 check
+            i = x.next_open(i)  # 직전 개장일
+        rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+    if rtList[0] == x.next_open(start_date).strftime('%Y-%m-%d'):
+        del rtList[0]
+    return rtList  # 납입 예정일 리스트 출력
+
+# print(getYearlyDateInfo('2002-09-16', '2022-09-14'))
