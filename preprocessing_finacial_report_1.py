@@ -148,42 +148,39 @@ def make_BS_file():
 def make_PL_file():
     # 2016년 부터 for 문으로 실행  - 1분기 누적, 혹은 누적로 할 지 결정해야 함, 4Q는 당기 만 즉 당기누적만 제공함...
     PL_info_list = [
-                ['2016_1Q_PL.txt','당기 1분기 누적','2016_1Q_PL.csv'],
-                ['2016_2Q_PL.txt','당기 반기 누적','2016_2Q_PL.csv'],
-                ['2016_3Q_PL.txt','당기 3분기 누적','2016_3Q_PL.csv'],
-                ['2016_4Q_PL.txt','당기','2016_4Q_PL.csv'],
+                ['당기 1분기 누적','2016_1Q_PL.csv'],
+                ['당기 반기 누적','2016_2Q_PL.csv'],
+                ['당기 3분기 누적','2016_3Q_PL.csv'],
+                ['당기','2016_4Q_PL.csv'],
                 
-                ['2017_1Q_PL.txt','당기 1분기 누적','2017_1Q_PL.csv'],
-                ['2017_2Q_PL.txt','당기 반기 누적','2017_2Q_PL.csv'],
-                ['2017_3Q_PL.txt','당기 3분기 누적','2017_3Q_PL.csv'],
-                ['2017_4Q_PL.txt','당기','2017_4Q_PL.csv'],
+                ['당기 1분기 누적','2017_1Q_PL.csv'],
+                ['당기 반기 누적','2017_2Q_PL.csv'],
+                ['당기 3분기 누적','2017_3Q_PL.csv'],
+                ['당기','2017_4Q_PL.csv'],
                 
-                ['2018_1Q_PL.txt','당기 1분기 누적','2018_1Q_PL.csv'],
-                ['2018_2Q_PL.txt','당기 반기 누적','2018_2Q_PL.csv'],
-                ['2018_3Q_PL.txt','당기 3분기 누적','2018_3Q_PL.csv'],
-                ['2018_4Q_PL.txt','당기','2018_4Q_PL.csv'],
+                ['당기 1분기 누적','2018_1Q_PL.csv'],
+                ['당기 반기 누적','2018_2Q_PL.csv'],
+                ['당기 3분기 누적','2018_3Q_PL.csv'],
+                ['당기','2018_4Q_PL.csv'],
                 
-                ['2019_1Q_PL.txt','당기 1분기 누적','2019_1Q_PL.csv'],
-                ['2019_2Q_PL.txt','당기 반기 누적','2019_2Q_PL.csv'],
-                ['2019_3Q_PL.txt','당기 3분기 누적','2019_3Q_PL.csv'],
-                ['2019_4Q_PL.txt','당기','2019_4Q_PL.csv'],
+                ['당기 1분기 누적','2019_1Q_PL.csv'],
+                ['당기 반기 누적','2019_2Q_PL.csv'],
+                ['당기 3분기 누적','2019_3Q_PL.csv'],
+                ['당기','2019_4Q_PL.csv'],
                 
-                ['2020_1Q_PL.txt','당기 1분기 누적','2020_1Q_PL.csv'],
-                ['2020_2Q_PL.txt','당기 반기 누적','2020_2Q_PL.csv'],
-                ['2020_3Q_PL.txt','당기 3분기 누적','2020_3Q_PL.csv'],
-                ['2020_4Q_PL.txt','당기','2020_4Q_PL.csv'],
+                ['당기 1분기 누적','2020_1Q_PL.csv'],
+                ['당기 반기 누적','2020_2Q_PL.csv'],
+                ['당기 3분기 누적','2020_3Q_PL.csv'],
+                ['당기','2020_4Q_PL.csv'],
                 
-                ['2021_1Q_PL.txt','당기 1분기 누적','2021_1Q_PL.csv'],
-                ['2021_2Q_PL.txt','당기 반기 누적','2021_2Q_PL.csv'],
-                ['2021_3Q_PL.txt','당기 3분기 누적','2021_3Q_PL.csv'],
-                ['2021_4Q_PL.txt','당기','2021_4Q_PL.csv'],
-                
-                ['2022_1Q_PL.txt','당기 1분기 누적','2022_1Q_PL.csv'],
-                ['2022_2Q_PL.txt','당기 반기 누적','2022_2Q_PL.csv']
+                ['당기 1분기 누적','2021_1Q_PL.csv'],
+                ['당기 반기 누적','2021_2Q_PL.csv'],
+                ['당기 3분기 누적','2021_3Q_PL.csv'],
+                ['당기','2021_4Q_PL.csv']
                 ]
     for PL_info in PL_info_list:
-        print("start :",PL_info[0])
-        df=pd.read_csv("C:\\Users\\LG\\Desktop\\financial_report\\"+PL_info[0],delimiter="\t", encoding='cp949')
+        print("start :",PL_info[1])
+        df=pd.read_csv("C:\\Users\\LG\\Desktop\\after_report_PL\\"+PL_info[1], encoding='cp949')
         
 
         def stock_code_preprocessing(df_data):
@@ -218,11 +215,11 @@ def make_PL_file():
         # 결과 데이터프레임(df_PL) 에 맞는 값들을 할당하는 함수
         def func(df):
             if df['항목코드'] in revenue: # 받아온 데이터프레임의 '항목코드' 컬럼이 revenue 리스트에 있으면
-                df_PL.loc[df['종목코드']]['Revenue']=df[PL_info[1]] # df_PL에 업데이트
+                df_PL.loc[df['종목코드']]['Revenue']=df[PL_info[0]] # df_PL에 업데이트
             elif df['항목코드'] in operating_incomeloss:
-                df_PL.loc[df['종목코드']]['OperatingIncomeLoss']=df[PL_info[1]]           
+                df_PL.loc[df['종목코드']]['OperatingIncomeLoss']=df[PL_info[0]]           
             elif df['항목코드'] in profitloss:
-                df_PL.loc[df['종목코드']]['ProfitLoss']=df[PL_info[1]]
+                df_PL.loc[df['종목코드']]['ProfitLoss']=df[PL_info[0]]
             df_PL.loc[df['종목코드']]['결산기준일']=df['결산기준일']
         df_base.apply(func,axis=1) # 함수 적용
 
@@ -245,18 +242,19 @@ def make_PL_file():
 
             for null_category in null_dict: # null_dict의 key값들에 대해서 반복
                 if null_category == 'Revenue': # 결측치 카테고리가 'ifrs_CurrentAssets' 일때,
-                    category_name_list = ['영업수익']
+                    category_name_list = ['매출액','영업수익','매출','영업수익(매출)','Ⅰ. 영업수익','매출과 지분법손익(영업수익)', 
+                                          'Ⅰ.매출액','영업수익(매출과지분법손익)','I.매출액','수익','영업수익(매출액','영업수익(매출액)']
                 elif null_category == 'OperatingIncomeLoss':
-                    category_name_list = ['영업이익']
+                    category_name_list = ['영업이익','영업이익(손실)','영업이익 (손실)', '영업손익', '영업 이익', 'Ⅲ. 영업이익', 'Ⅴ.영업이익', 'Ⅴ.영업이익(손실)','IV.영업이익(손실)']
                 elif null_category == 'ProfitLoss':
-                    category_name_list = ['당기순이익', '연결당기순이익', '당기연결순이익']
+                    category_name_list = ['당기순이익', '연결당기순이익', '당기연결순이익', '당기순이익(손실)', 'VI. 당기순이익(손실)', '당기순손익','Ⅷ.당기순이익(손실)']
                     
                 for null_stock_code in null_dict[null_category]: # 'ifrs_CurrentAssets' 에서 결측치를 가진 '종목코드'들을 추출
                     for category_name in category_name_list:
                         df_temp = df_base[df_base['종목코드']==null_stock_code] # 'ifrs_CurrentAssets' 으로 선택하지 못해서, 항목명으로 정보를 얻기위해 사용
                         df_temp = df_temp[df_temp['항목명'].str.strip() == category_name] # '항목명'이 category_name인 것을 선택
                         if len(df_temp) >0:
-                            df_PL.loc[null_stock_code][null_category] = df_temp.loc[df_temp.index[0]][PL_info[1]]
+                            df_PL.loc[null_stock_code][null_category] = df_temp.loc[df_temp.index[0]][PL_info[0]]
 
 
 
@@ -265,7 +263,7 @@ def make_PL_file():
         display(check_null_frame)            
         df_PL.columns = ['매출액','영업이익','당기순이익','결산기준일'] # 컬럼명들을 수정
         df_PL = df_PL.reset_index('종목코드') # 인덱스를 컬럼으로 초기화
-        df_PL.to_csv('C:\\Users\\LG\\Desktop\\preprocessing_financial\\'+PL_info[2], index=False,encoding='cp949') # 파일로 저장
+        df_PL.to_csv('C:\\Users\\LG\\Desktop\\result_PL\\'+PL_info[1], index=False,encoding='cp949') # 파일로 저장
 
     
     
