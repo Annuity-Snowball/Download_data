@@ -123,10 +123,10 @@ def get_portVariables(dict_realvalue, dict_inputmoney, rebalanceDateList):
     get_returns(df)  # 수익률 계산
     win_rate = get_winRate(df, rebalanceDateList)  # 승률 계산해서 저장 (리밸런싱 날짜 기준)
     mdd = get_mdd(df)  # mdd 계산
-    print(df)
-    print("승률: ", win_rate, "%")
-    print(mdd)
-    print(df['return'].to_dict())
+    # print(df)
+    # print("승률: ", win_rate, "%")
+    # print(mdd)
+    # print(df['return'].to_dict())
     portfolio_result['win_rate'] = win_rate
     portfolio_result['mdd'] = mdd
     portfolio_result['return'] = list(df['return'].to_dict())
@@ -172,33 +172,32 @@ def receipt_simul(portfolioResult, receiptWay):
     # (수령 후 다음 해 잔액) = (잔액 x 포트폴리오 기간 내 평균수익률)
 
     cum_value = portfolioResult['current_value']  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
-    print("수령 직전가치: ", cum_value)
+    # print("수령 직전가치: ", cum_value)
     mean_return = round(portfolioResult['mean_return'], 2)
-    print("평균수익률: ", mean_return)
+    # print("평균수익률: ", mean_return)
 
+    rtDict = dict()
 
     if receiptWay == 0:
-        for i in range(1, 11):  # 10년 이후부터는 한도x
-            can_receiptValue = cal_receiptValue(i, cum_value)  # 연간 수령가능 금액
-            print(i, "년차 수령 가능금액: ", int(can_receiptValue))
+        can_receiptValue = cal_receiptValue(1, cum_value)  # 첫 해 수령가능 금액
 
-            print("매 월 수령할 금액 입력(최대 ", int(can_receiptValue / 12), "원)")
-            print(": ")
-            while (1):
-                monthlyReceipt = int(input())  # 월간 수령금액 입력받기
-                if monthlyReceipt > int(can_receiptValue / 12): #입력값이 수령 가능범위를 넘는 경우
-                    print("금액 초과, 재입력: ")
-                    continue
-                break
-            print(i, "년차 수령금액: ", int(monthlyReceipt * 12))
+        while (1):
+            print("매 월 수령할 금액 입력(최대 ", int(can_receiptValue / 12), "원): ")
+            monthlyReceipt = int(input())  # 월간 수령금액 입력받기
+            if monthlyReceipt > int(can_receiptValue / 12):  # 입력값이 수령 가능범위를 넘는 경우
+                print("금액 한도 초과, 재입력: ")
+                continue
+            break
+
+        for i in range(1, 11):  # 10년 이후부터는 한도x
+
+            rtDict[i] = int(monthlyReceipt * 12)
             cum_value = int((cum_value - monthlyReceipt * 12) * (1 + mean_return))  # 누적금액 갱신, 수령한 만큼 제하기
 
-        print("10년 수령 후 계좌 잔액: ", cum_value)
-
+        rtDict['leftMoney'] = cum_value
 
     elif receiptWay == 1:
-        print("수령가능금액 중 매 년 수령할 비율을 입력(최대 100%)")
-        print(": ")
+        print("수령가능금액 중 매 년 수령할 비율을 입력(최대 100%): ")
         while (1):
             yearlyReceiptRatio = int(input())  # 월간 수령금액 입력받기
             if yearlyReceiptRatio > 100 or yearlyReceiptRatio < 0:
@@ -208,30 +207,29 @@ def receipt_simul(portfolioResult, receiptWay):
 
         for i in range(1, 11):  # 10년 이후부터는 한도x
             can_receiptValue = int(cal_receiptValue(i, cum_value))  # 연간 수령가능 금액
-            print(i, "년차 수령금액: ", int(can_receiptValue * yearlyReceiptRatio / 100))
+            rtDict[i] = int(can_receiptValue * yearlyReceiptRatio / 100)
             cum_value = int(
                 (cum_value - can_receiptValue * yearlyReceiptRatio / 100) * (1 + mean_return))  # 누적금액 갱신, 수령한 만큼 제하기
 
-        print("10년 수령 후 계좌 잔액: ", cum_value)
+        rtDict['leftMoney'] = cum_value
 
     elif receiptWay == 2:
         for i in range(1, 11):  # 10년 이후부터는 한도x
             can_receiptValue = int(cal_receiptValue(i, cum_value))  # 연간 수령가능 금액
 
-            print(i, " 년차에 수령하실 금액을 입력하세요(최대 ", can_receiptValue, "원)")
-            print(": ")
+            print(i, " 년차에 수령하실 금액을 입력하세요(최대 ", can_receiptValue, "원): ")
             while (1):
                 Receipt = int(input())  # 연 수령금액 입력받기
                 if Receipt > can_receiptValue:
                     print("금액 초과, 재입력: ")
                     continue
                 break
-            print(i, "년차 수령금액: ", Receipt)
+            rtDict[i] = Receipt
             cum_value = int((cum_value - Receipt) * (1 + mean_return))  # 누적금액 갱신, 수령한 만큼 제하기
 
-        print("10년 수령 후 계좌 잔액: ", cum_value)
-    else:
-        pass
+        rtDict['leftMoney']  = cum_value
+
+    return rtDict
 
     # print("수령방식: ", receiptWay)
     # print()
@@ -248,4 +246,4 @@ def cal_receiptValue(year, value):
 
 
 a = get_portVariables(real_portfolio_account, input_money_to_portfolio, rebalanceTestList)
-receipt_simul(a)
+print(receipt_simul(a, 0))
