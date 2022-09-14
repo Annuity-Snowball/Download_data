@@ -152,4 +152,4 @@ def cal_receiptValue(year, value):
 
     return value / (11 - year) * 1.2
 
-get_portVariables(values) #합본함수 실행
+# get_portVariables(values) #합본함수 실행
