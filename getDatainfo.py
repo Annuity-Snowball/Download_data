@@ -11,8 +11,13 @@ warnings.simplefilter(action='ignore', category=FutureWarning) # FutureWaring �
 
 x = ecal.get_calendar("XKRX")  # 한국 증시 코드
 
+opendf = pd.read_csv('openDate.csv', index_col='index') #2002-09-13~2022-09-13부터의 개장일 csv파일
+# print(opendf)
+opendf['Opendate'] = pd.to_datetime(opendf['Opendate'], format='%Y-%m-%d', errors='raise') #원소를 datetime타입으로 변경
+# print(opendf.loc['2022-09-01':'2022-09-13', ['Opendate']].info()) # 일정 범위
 
-# print(holiday)
+
+
 def getPayInDateInfo(start_date, end_date, month_type):  # 납입일 계산 (월초: 0, 월말: 1)
     rtList = []
     if month_type == '0':
@@ -46,12 +51,11 @@ def getPayInDateInfo(start_date, end_date, month_type):  # 납입일 계산 (월
         return rtList  # 납입 예정일 리스트 출력
 
 
-def getDailyDateInfo(start_date, end_date):  # 지정한 기간 사이의 모든 개장일 반환 - PDF 크롤링에만 사용 가능(이후 1년까지만 가능)
-    a = x.sessions_in_range(start_date, end_date)
+def getDailyDateInfo(start_date, end_date):
     rtList = []
+    opendf = pd.read_csv('openDate.csv')  # 2002-09-13~2022-09-13부터의 개장일 csv파일
+    opendf['Opendate'] = pd.to_datetime(opendf['Opendate'], format='%Y-%m-%d', errors='raise')  # 원소를 datetime타입으로 변경
 
-    for i in a:
-        rtList.append(i.strftime('%Y-%m-%d'))
     return rtList
 
 def getYearlyDateInfo(start_date, end_date):
@@ -115,4 +119,4 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
             rtList.append(i.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
         return rtList  # 납입 예정일 리스트 출력
 
-print(x.closes["2002-09-13":"2022-09-13"])
+# print(getYearlyDateInfo("2003-01-01", "2022-09-14"))

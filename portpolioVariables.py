@@ -78,6 +78,7 @@ def receipt_simul(df):
     print("1: 정액수령(월)")
     print("2: 비율수령(월)")
     print("3: 자율수령: " )
+
     receiptWay = int(input())  # 수령방식
     cum_value = df.iloc[-1, 1] # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
     mean_return = df['return'].mean() # 수익률 평균
@@ -154,4 +155,3 @@ def cal_receiptValue(year, value):
     return value / (11 - year) * 1.2
 
 get_portVariables(values) #합본함수 실행
-
