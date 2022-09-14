@@ -45,14 +45,11 @@ def make_BS_file():
                     ['2021_1Q_BS.txt','당기 1분기말','2021_1Q_BS.csv'],
                     ['2021_2Q_BS.txt','당기 반기말','2021_2Q_BS.csv'],
                     ['2021_3Q_BS.txt','당기 3분기말','2021_3Q_BS.csv'],
-                    ['2021_4Q_BS.txt','당기','2021_4Q_BS.csv'],
-                    
-                    ['2022_1Q_BS.txt','당기 1분기말','2022_1Q_BS.csv'],
-                    ['2022_2Q_BS.txt','당기 반기말','2022_2Q_BS.csv']
+                    ['2021_4Q_BS.txt','당기','2021_4Q_BS.csv']
                     ]
     for BS_info in BS_info_list:
         print("start :",BS_info[0])
-        df=pd.read_csv("C:\\Users\\LG\\Desktop\\financial_report\\"+BS_info[0],delimiter="\t", encoding='cp949')
+        df=pd.read_csv("C:\\Users\\LG\\Desktop\\report_BS\\"+BS_info[0],delimiter="\t", encoding='cp949')
         
 
         def stock_code_preprocessing(df_data):
@@ -117,11 +114,11 @@ def make_BS_file():
 
                 for null_category in null_dict: # null_dict의 key값들에 대해서 반복
                     if null_category == 'CurrentAssets': # 결측치 카테고리가 'ifrs_CurrentAssets' 일때,
-                        category_name_list = ['유동자산','유동 자산']
+                        category_name_list = ['유동자산','유동 자산','유동자산 합계','I. 유동자산','유동자산합계']
                     elif null_category == 'Assets':
-                        category_name_list = ['자산총계','자산 총계']
+                        category_name_list = ['자산총계','자산 총계','자본과부채총계']
                     elif null_category == 'CurrentLiabilities':
-                        category_name_list = ['유동부채', '유동 부채']
+                        category_name_list = ['유동부채', '유동 부채','유동부채 합계', 'I. 유동부채','유동부채합계']
                     elif null_category == 'Liabilities':
                         category_name_list = ['부채총계', '부채 총계']
                         
@@ -139,7 +136,7 @@ def make_BS_file():
         display(check_null_frame)            
         df_BS.columns = ['유동자산', '자산총계', '유동부채', '부채총계','결산기준일'] # 컬럼명들을 수정
         df_BS = df_BS.reset_index('종목코드') # 인덱스를 컬럼으로 초기화
-        df_BS.to_csv('C:\\Users\\LG\\Desktop\\preprocessing_financial\\'+BS_info[2], index=False,encoding='cp949') # 파일로 저장
+        df_BS.to_csv('C:\\Users\\LG\\Desktop\\result_BS\\'+BS_info[2], index=False,encoding='cp949') # 파일로 저장
         print("end :",BS_info[0])
 
 
@@ -245,7 +242,7 @@ def make_PL_file():
                     category_name_list = ['매출액','영업수익','매출','영업수익(매출)','Ⅰ. 영업수익','매출과 지분법손익(영업수익)', 
                                           'Ⅰ.매출액','영업수익(매출과지분법손익)','I.매출액','수익','영업수익(매출액','영업수익(매출액)']
                 elif null_category == 'OperatingIncomeLoss':
-                    category_name_list = ['영업이익','영업이익(손실)','영업이익 (손실)', '영업손익', '영업 이익', 'Ⅲ. 영업이익', 'Ⅴ.영업이익', 'Ⅴ.영업이익(손실)','IV.영업이익(손실)']
+                    category_name_list = ['영업이익','영업이익(손실)','영업이익 (손실)', '영업손익', '영업 이익', 'Ⅲ. 영업이익', 'Ⅴ.영업이익', '영업손실','Ⅴ.영업이익(손실)','IV.영업이익(손실)']
                 elif null_category == 'ProfitLoss':
                     category_name_list = ['당기순이익', '연결당기순이익', '당기연결순이익', '당기순이익(손실)', 'VI. 당기순이익(손실)', '당기순손익','Ⅷ.당기순이익(손실)']
                     
@@ -254,7 +251,10 @@ def make_PL_file():
                         df_temp = df_base[df_base['종목코드']==null_stock_code] # 'ifrs_CurrentAssets' 으로 선택하지 못해서, 항목명으로 정보를 얻기위해 사용
                         df_temp = df_temp[df_temp['항목명'].str.strip() == category_name] # '항목명'이 category_name인 것을 선택
                         if len(df_temp) >0:
-                            df_PL.loc[null_stock_code][null_category] = df_temp.loc[df_temp.index[0]][PL_info[0]]
+                            if category_name == '영업손실':
+                                df_PL.loc[null_stock_code][null_category] = '-'+df_temp.loc[df_temp.index[0]][PL_info[0]]
+                            else:
+                                df_PL.loc[null_stock_code][null_category] = df_temp.loc[df_temp.index[0]][PL_info[0]]
 
 
 
@@ -267,5 +267,5 @@ def make_PL_file():
 
     
     
-# make_BS_file()
-make_PL_file()
+make_BS_file()
+# make_PL_file()
