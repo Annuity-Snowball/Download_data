@@ -103,9 +103,8 @@ input_money_to_portfolio = {'2020-01-02': 500000, '2020-01-03': 500000, '2020-01
 # values= {'2021-01-01': [1000000.0, 949528.0],'2021-01-10': [1000000.0, 512878.0], '2021-01-15': [1000000.0, 1112878.0], '2021-02-01': [1500000.0, 1646600.0], '2021-02-15': [1500000.0, 1533469.0],
 #           '2021-03-01': [2000000.0, 2203818.0], '2021-03-15': [2000000.0, 1974316.0], '2021-04-01': [2500000.0, 2101941.0], '2021-04-15': [2500000.0, 2464465.0],
 #           '2021-05-01': [3000000.0, 2450307.0], '2021-05-15': [3000000.0, 3001719.0], '2021-06-01': [3500000.0, 3626080.0]}
-#         # '2021-01-10'의 경우 MDD테스트를 위한 임의값
 
-rebalanceTestList = ['2021-01-01', '2021-02-01', '2021-03-01', '2021-04-01', '2021-05-01', '2021-06-01' ] #승률 계산을 위한 임시 리밸런싱 날짜 리스트
+rebalanceTestList = ['2020-01-02', '2020-01-15', '2020-02-05', '2020-03-31', '2020-04-13', '2020-05-14' ] #승률 계산을 위한 임시 리밸런싱 날짜 리스트
 
 # 누적수익률
 # gross_ret = df['return']+1
@@ -116,29 +115,29 @@ def get_portVariables(dict_realvalue, dict_inputmoney, rebalanceDateList):
     values = dict()
     for key in dict_inputmoney.keys():
         values[key] = list()
-        values[key].append(dict_inputmoney[key])
+        values[key].append(float(dict_inputmoney[key]))
         values[key].append(dict_realvalue[key])
 
     df = pd.DataFrame.from_dict(values, orient='index', columns=['seed', 'value'])  # 넘겨받은 사전 데이터 데이터프레임으로 변환
-    df['seed_val_ratio'] = df['value'] / df['seed']  # 원금 / 수익 비율 계산해서 열 추가
 
     get_returns(df)  # 수익률 계산
-    # win_rate = get_winRate(df, rebalanceDateList)  # 승률 계산해서 저장 (리밸런싱 날짜 기준)
+    win_rate = get_winRate(df, rebalanceDateList)  # 승률 계산해서 저장 (리밸런싱 날짜 기준)
     mdd = get_mdd(df)  # mdd 계산
     print(df)
-    # print("승률: ", win_rate, "%")
-    print("mdd: ", mdd)
-    # portfolio_result['승률'] = win_rate
-    print(list(df['return']))
+    print("승률: ", win_rate, "%")
+    print(mdd)
+    print(df['return'].to_dict())
+    portfolio_result['win_rate'] = win_rate
     portfolio_result['mdd'] = mdd
-    portfolio_result['수익률'] = list(df['return'])
+    portfolio_result['return'] = list(df['return'].to_dict())
+    portfolio_result['current_value'] = df.iloc[-1, 1]  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
+    portfolio_result['mean_return'] = df['return'].mean()
     return portfolio_result
 
 
 def get_returns(df):
     df['return'] = (df['value'] - df['seed']) / df['seed']  # +df['cash'] #일별수익률 계산해서 열 추가 (월간수익률(납입일 기준),추가 가능)
-
-
+    df['return'] = df['return'].round(2)
 def get_winRate(df, rebalace_dateInfoList):
     # 리밸런싱 날짜 리스트받아서, 해당하는 날짜들의 승률 계산해서 반환
     win_count = 0
@@ -154,57 +153,50 @@ def get_mdd(df):
     # MDD(Maximum Draw-Down): 기간 내 최대 낙폭
     #:return: (peak_upper, peak_lower, mdd_rate) v
 
-    window = 12  # 기간 = 12납입일(임시)
-    max_in_seedValratio = df['seed_val_ratio'].rolling(window, min_periods=1).max()  # 기간동안의 최댓값 저장
-    dd = ((df['seed_val_ratio']) / max_in_seedValratio - 1.0) * 100  # DD: 현재값/최댓값(기간) - 1
-    mdd = dd.rolling(window, min_periods=1).min()  # 기간 내 DD중 최솟값
-    print("임시계산: ", mdd)  # 임시 출력
-
-    arr_v = np.array(df['seed_val_ratio'])
+    arr_v = np.array(df['return'])
     peak_lower = np.argmax(np.maximum.accumulate(arr_v) - arr_v)
     peak_upper = np.argmax(arr_v[:peak_lower])
-    return peak_upper, peak_lower, (arr_v[peak_lower] - arr_v[peak_upper]) / arr_v[
-        peak_upper]  # (기간 최저) - (기간 최고) / (기간 최고) -> 기간 내 최대 낙폭
+    mdd = round((arr_v[peak_lower] - arr_v[peak_upper]) / arr_v[peak_upper], 2)
+    return df.index[peak_upper], df.index[peak_lower],mdd   # (기간 최저) - (기간 최고) / (기간 최고) -> 기간 내 최대 낙폭
 
 
-def receipt_simul(df):
+def receipt_simul(portfolioResult, receiptWay):
     # 수령 시뮬레이션
     # 연간 수령한도: 계좌평가액 / (11 - 연금수령연차) * 1.2 -> 1년간 자유롭게 나누어 수령 가능 (수령하지 않는 것도 가능) - 매년 1월 1일 기준으로 평가
     # 연 1,200만원 이상 수령 시, 종합소득세 부과 (16.5%)
     # 수령 가능금액 확인
-    # 1. 정량수령 2. 정률수령 3.자율수령 선택
+    # 0: 정량수령
+    # 1: 정률수령
+    # 2: 자율수령 선택
     # 수령 금액 결정
-    # (수령 후 금액) = (잔액 x 포트폴리오 평균수익률)
+    # (수령 후 다음 해 잔액) = (잔액 x 포트폴리오 기간 내 평균수익률)
 
-    print("연금 수령방식 선택")
-    print("1: 정액수령(월)")
-    print("2: 비율수령(월)")
-    print("3: 자율수령: ")
+    cum_value = portfolioResult['current_value']  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
+    print("수령 직전가치: ", cum_value)
+    mean_return = round(portfolioResult['mean_return'], 2)
+    print("평균수익률: ", mean_return)
 
-    receiptWay = int(input())  # 수령방식
-    cum_value = df.iloc[-1, 1]  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
-    mean_return = df['return'].mean()  # 수익률 평균
 
-    if receiptWay == 1:
+    if receiptWay == 0:
         for i in range(1, 11):  # 10년 이후부터는 한도x
             can_receiptValue = cal_receiptValue(i, cum_value)  # 연간 수령가능 금액
-            print(i, "년차 수령 가능금액: ", can_receiptValue)
+            print(i, "년차 수령 가능금액: ", int(can_receiptValue))
 
-            print("매 월 수령할 금액 입력(최대 ", can_receiptValue / 12, "원)")
+            print("매 월 수령할 금액 입력(최대 ", int(can_receiptValue / 12), "원)")
             print(": ")
             while (1):
                 monthlyReceipt = int(input())  # 월간 수령금액 입력받기
-                if monthlyReceipt > can_receiptValue:
+                if monthlyReceipt > int(can_receiptValue / 12): #입력값이 수령 가능범위를 넘는 경우
                     print("금액 초과, 재입력: ")
                     continue
                 break
-            print(i, "년차 수령금액: ", monthlyReceipt * 12)
+            print(i, "년차 수령금액: ", int(monthlyReceipt * 12))
             cum_value = int((cum_value - monthlyReceipt * 12) * (1 + mean_return))  # 누적금액 갱신, 수령한 만큼 제하기
 
         print("10년 수령 후 계좌 잔액: ", cum_value)
 
 
-    elif receiptWay == 2:
+    elif receiptWay == 1:
         print("수령가능금액 중 매 년 수령할 비율을 입력(최대 100%)")
         print(": ")
         while (1):
@@ -215,17 +207,16 @@ def receipt_simul(df):
             break
 
         for i in range(1, 11):  # 10년 이후부터는 한도x
-            can_receiptValue = cal_receiptValue(i, cum_value)  # 연간 수령가능 금액
+            can_receiptValue = int(cal_receiptValue(i, cum_value))  # 연간 수령가능 금액
             print(i, "년차 수령금액: ", int(can_receiptValue * yearlyReceiptRatio / 100))
             cum_value = int(
                 (cum_value - can_receiptValue * yearlyReceiptRatio / 100) * (1 + mean_return))  # 누적금액 갱신, 수령한 만큼 제하기
 
         print("10년 수령 후 계좌 잔액: ", cum_value)
 
-    elif receiptWay == 3:
+    elif receiptWay == 2:
         for i in range(1, 11):  # 10년 이후부터는 한도x
-            can_receiptValue = cal_receiptValue(i, cum_value)  # 연간 수령가능 금액
-            print(i, "년차 수령 가능금액: ", can_receiptValue)
+            can_receiptValue = int(cal_receiptValue(i, cum_value))  # 연간 수령가능 금액
 
             print(i, " 년차에 수령하실 금액을 입력하세요(최대 ", can_receiptValue, "원)")
             print(": ")
@@ -256,5 +247,5 @@ def cal_receiptValue(year, value):
     return value / (11 - year) * 1.2
 
 
-get_portVariables(real_portfolio_account, input_money_to_portfolio, rebalanceTestList)
-
+a = get_portVariables(real_portfolio_account, input_money_to_portfolio, rebalanceTestList)
+receipt_simul(a)
