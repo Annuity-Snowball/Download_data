@@ -239,12 +239,19 @@ def make_PL_file():
 
             for null_category in null_dict: # null_dict의 key값들에 대해서 반복
                 if null_category == 'Revenue': # 결측치 카테고리가 'ifrs_CurrentAssets' 일때,
+                    # 가능한 항목명들의 리스트들
                     category_name_list = ['매출액','영업수익','매출','영업수익(매출)','Ⅰ. 영업수익','매출과 지분법손익(영업수익)', 
-                                          'Ⅰ.매출액','영업수익(매출과지분법손익)','I.매출액','수익','영업수익(매출액','영업수익(매출액)']
+                                          'Ⅰ.매출액','영업수익(매출과지분법손익)','I.매출액','수익','영업수익(매출액','영업수익(매출액)',
+                                          'I. 영업수익','매출액 및 지분법손익','I.영업수익']
                 elif null_category == 'OperatingIncomeLoss':
-                    category_name_list = ['영업이익','영업이익(손실)','영업이익 (손실)', '영업손익', '영업 이익', 'Ⅲ. 영업이익', 'Ⅴ.영업이익', '영업손실','Ⅴ.영업이익(손실)','IV.영업이익(손실)']
+                    category_name_list = ['영업이익','영업이익(손실)','영업이익 (손실)', '영업손익', 
+                                          '영업 이익', 'Ⅲ. 영업이익', 'Ⅴ.영업이익', '영업손실','Ⅴ.영업이익(손실)','IV.영업이익(손실)']
                 elif null_category == 'ProfitLoss':
-                    category_name_list = ['당기순이익', '연결당기순이익', '당기연결순이익', '당기순이익(손실)', 'VI. 당기순이익(손실)', '당기순손익','Ⅷ.당기순이익(손실)']
+                    category_name_list = ['당기순이익', '연결당기순이익', '당기연결순이익', '당기순이익(손실)', 
+                                          'VI. 당기순이익(손실)', '당기순손익','Ⅷ.당기순이익(손실)','분기순이익',
+                                          '연결당기순이익(손실)','당기순손실','당기 순이익','Ⅴ. 당기순이익', '반기순이익',
+                                          '연결당기순손실', 'I.당기순이익', '분기연결순이익(손실)','분기순손익','Ⅴ. 반기순이익',
+                                          '반기순손익','반기 순이익']
                     
                 for null_stock_code in null_dict[null_category]: # 'ifrs_CurrentAssets' 에서 결측치를 가진 '종목코드'들을 추출
                     for category_name in category_name_list:
@@ -260,7 +267,7 @@ def make_PL_file():
 
 
         check_null_frame = df_PL[df_PL['Revenue'].isnull() | df_PL['OperatingIncomeLoss'].isnull() | df_PL['ProfitLoss'].isnull() | df_PL['결산기준일'].isnull()].copy()
-        display(check_null_frame)            
+        display(check_null_frame)   # 결측치 확인
         df_PL.columns = ['매출액','영업이익','당기순이익','결산기준일'] # 컬럼명들을 수정
         df_PL = df_PL.reset_index('종목코드') # 인덱스를 컬럼으로 초기화
         df_PL.to_csv('C:\\Users\\LG\\Desktop\\result_PL\\'+PL_info[1], index=False,encoding='cp949') # 파일로 저장
@@ -268,4 +275,4 @@ def make_PL_file():
     
     
 # make_BS_file()
-make_PL_file()
+# make_PL_file()
