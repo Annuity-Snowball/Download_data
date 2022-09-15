@@ -68,7 +68,7 @@ def get_mdd(df):
     return df.index[peak_upper], df.index[peak_lower], mdd  # (기간 최저) - (기간 최고) / (기간 최고) -> 기간 내 최대 낙폭
 
 
-def receipt_simul(portfolioResult, receiptWay, receiptYear=None):
+def receipt_simul(portfolioResult, receiptYear):
     # 수령 시뮬레이션
     # 연간 수령한도: 계좌평가액 / (11 - 연금수령연차) * 1.2 -> 1년간 자유롭게 나누어 수령 가능 (수령하지 않는 것도 가능) - 매년 1월 1일 기준으로 평가
     # 연 1,200만원 이상 수령 시, 종합소득세 부과 (16.5%)
@@ -81,80 +81,45 @@ def receipt_simul(portfolioResult, receiptWay, receiptYear=None):
     # print("수령 직전가치: ", cum_value)
     # print("평균수익률: ", mean_return)
 
-    rtDict = dict()
-    rtDict['총 수령액'] = 0
+    rtDict1 = dict()
+    rtDict1['총 수령액'] = 0
     can_receiptValue = 0
 
-    if receiptWay == 0:  # receiptYear동안 최대로 받기
-        for i in range(1, receiptYear + 1):
-            can_receiptValue = int(cum_value / (receiptYear - (i - 1)))  # 남은 금액을 남은 연차로 엔빵
-            if i <= 10:  # 1~10년차의 경우
-                if can_receiptValue > cal_receiptValue(i, cum_value):
-                    can_receiptValue = int(cal_receiptValue(i, cum_value))  # 10년이내의 최대를 넘을 시 최대금액으로 제한
-            if can_receiptValue > 12000000:  # 세액공제 한도 초과 시
-                can_receiptValue = 12000000  # 한도 범위인 1200만원으로 제한
-            cum_value = int(cum_value - can_receiptValue)  # 잔액 정리
-            rtDict[str(i) + '년차 수령금액'] = can_receiptValue
-            rtDict['총 수령액'] = rtDict['총 수령액'] + can_receiptValue
+    for i in range(1, receiptYear + 1):
+        can_receiptValue = int(cum_value / (receiptYear - (i - 1)))  # 남은 금액을 남은 연차로 엔빵
+        if i <= 10:  # 1~10년차의 경우
+            if can_receiptValue > cal_receiptValue(i, cum_value):
+                can_receiptValue = int(cal_receiptValue(i, cum_value))  # 10년이내의 최대를 넘을 시 최대금액으로 제한
+        if can_receiptValue > 12000000:  # 세액공제 한도 초과 시
+            can_receiptValue = 12000000  # 한도 범위인 1200만원으로 제한
+        cum_value = int(cum_value - can_receiptValue)  # 잔액 정리
+        rtDict1[str(i) + '년차 수령금액'] = can_receiptValue
+        rtDict1['총 수령액'] = rtDict1['총 수령액'] + can_receiptValue
 
-    rtDict['잔액'] = cum_value
+    rtDict1['잔액'] = cum_value
 
-    if receiptWay == 1:  # 매년 최대 금액으로 몇 년 받을 수 있니?
+    cum_value2 = int(portfolioResult['포트폴리오 가치'])  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
+    rtDict2 = dict()
+    rtDict2['총 수령액'] = 0
+    can_receiptValue2 = 0
+    year = 1
 
-        year = 1
+    while cum_value2 > 0:
+        if year <= 10:
+            can_receiptValue2 = int(cal_receiptValue(year, cum_value2))  # 당 해 수령가능 금액
+        else:
+            can_receiptValue2 = int(cum_value2)
 
-        while cum_value > 0:
-            if year <= 10:
-                can_receiptValue = int(cal_receiptValue(year, cum_value))  # 당 해 수령가능 금액
-            else:
-                can_receiptValue = int(cum_value)
+        if can_receiptValue2 > 12000000:
+            can_receiptValue2 = 12000000
 
-            if can_receiptValue > 12000000:
-                can_receiptValue = 12000000
+        rtDict2[str(year) + '년차 수령금액'] = can_receiptValue2
+        rtDict2['총 수령액'] = rtDict2['총 수령액'] + can_receiptValue2
+        cum_value2 = int(cum_value2 - can_receiptValue2)
+        year = year + 1
 
-            rtDict[str(year) + '년차 수령금액'] = can_receiptValue
-            rtDict['총 수령액'] = rtDict['총 수령액'] + can_receiptValue
-            cum_value = int(cum_value - can_receiptValue)
-            year = year + 1
+    rtDict2['잔액'] = cum_value2
 
-        rtDict['잔액'] = cum_value
-
-        # can_receiptValue = int(cal_receiptValue(1, cum_value))  # 첫 해 수령가능 금액
-
-        # while (1):
-        #     # print("매 월 수령할 금액 입력(최대 ", int(can_receiptValue / 12), "원): ")
-        #     monthlyReceipt = int(input())  # 월간 수령금액 입력받기
-        #     if monthlyReceipt > int(can_receiptValue / 12):  # 입력값이 수령 가능범위를 넘는 경우
-        #         print("금액 한도 초과, 재입력: ")
-        #         continue
-        #     break
-        #
-        # receiptMonth = int(cum_value / monthlyReceipt)  # 수령 개월 수
-        # rtDict['수령 개월 수'] = receiptMonth
-        #
-        #
-        # for i in range(receiptMonth): # 10년 이후부터는 한도x
-        #     rtDict['총 수령액'] = rtDict['총 수령액'] + monthlyReceipt
-        #     cum_value = int(cum_value - monthlyReceipt)
-        #
-        # rtDict['수령 후 잔액'] = cum_value
-        # print(rtDict)
-
-    # elif receiptWay == 1: #운용 x, 매 년 최대 금액 및 1200만원 제한 -> 10년 고정으로 수령하게 되어있음.
-    #     for i in range(1, 11):
-    #         can_receiptValue = int(cal_receiptValue(i, cum_value))  # 해마다 수령 가능금액
-    #         if can_receiptValue > 12000000:
-    #             can_receiptValue = 12000000 # 최대 연 1200만원 제한
-    #         rtDict[str(i) + '년차 수령액'] = can_receiptValue
-    #         rtDict['총 수령액'] = rtDict['총 수령액'] + can_receiptValue
-    #         cum_value = int(cum_value - can_receiptValue)
-    #
-    #     rtDict['수령 후 잔액'] = cum_value
-    #     print(rtDict)
-    #
-    if (rtDict['잔액'] > 0):
-        print("잔액이 0보다 큽니다, 수령 기간을 늘리시길 권장드립니다.")
-    return rtDict
 
     # print("수령방식: ", receiptWay)
     # print()
@@ -162,6 +127,10 @@ def receipt_simul(portfolioResult, receiptWay, receiptYear=None):
     # print()
     # print("수익률 평균: ", mean_return)
 
+    if rtDict1['잔액'] > 0:
+        print("첫 번째 방식의 경우 잔액이 0보다 큽니다, 수령 기간을 늘리시길 권장드립니다.")
+    rtList = [rtDict1, rtDict2]
+    return rtList
 
 def cal_receiptValue(year, value):
     if year == 10:
