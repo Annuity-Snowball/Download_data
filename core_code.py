@@ -209,13 +209,13 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             
             # 세제혜택을 고려하고, 날짜가 세제환급받을 날짜들 중 하나이면
             if (test_date in tax_benfit_date_list) and tax ==1:
-                print('**********************************')
-                print('세제혜택 받을 금액 :', tax_benefit_money)
+                # print('**********************************')
+                # print('세제혜택 받을 금액 :', tax_benefit_money)
                 if tax_benefit_money >= 7000000: # 세제혜택 받을 금액이 700만원 이상이면(irp 기준)
                     tax_benefit_money = 7000000 * 0.165 # 700만원의 16.5% 금액을 환급
                 else:# 세제혜택 받을 금액이 700만원 이하이면
                     tax_benefit_money *= 0.165 # 금액의 16.5% 금액을 환급
-                print('세제환급 받을 금액 :', tax_benefit_money)
+                # print('세제환급 받을 금액 :', tax_benefit_money)
                 balance_amount += tax_benefit_money
                 tax_benefit_money =0 # 세제혜택 받을 금액으로 0원으로 초기화
                 
@@ -230,32 +230,32 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
                     tax_benefit_money += input_money # 세제혜택을 받을 금액에 납입금액을 더함
                     
                 rebalance_date=test_date # '최근 리밸런싱한 날짜'를 갱신
-                print("==================================")
-                print(rebalance_date, "리밸런싱")
-                print("==================================")
+                # print("==================================")
+                # print(rebalance_date, "리밸런싱")
+                # print("==================================")
                 # 리밸런싱 할 때 구매할 금융상품들 가격 구함
                 portfolio_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, rebalance_date)
-                print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_product_price)
+                # print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_product_price)
                 
-                print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
+                # print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
                 
                 rebalance_balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio,test_date)
-                print('리밸런싱 후 금융상품들 개수 :', portfolio_product_count)
-                print("리밸런싱 후 잔액 :", rebalance_balance_account)
+                # print('리밸런싱 후 금융상품들 개수 :', portfolio_product_count)
+                # print("리밸런싱 후 잔액 :", rebalance_balance_account)
                 
                 portfolio_rebalance_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
-                print('리밸런싱 후 금융상품들 가치 :',portfolio_rebalance_product_value)
+                # print('리밸런싱 후 금융상품들 가치 :',portfolio_rebalance_product_value)
                 
                 portfolio_rebalance_strategy_value=getPortfolioStrategyValue(portfolio_rebalance_product_value)
-                print('리밸런싱 후 전략별 가치 :',portfolio_rebalance_strategy_value)
+                # print('리밸런싱 후 전략별 가치 :',portfolio_rebalance_strategy_value)
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_rebalance_strategy_value)
                 total_portfolio_account[rebalance_date]=portfolio_rebalance_value[rebalance_date]
-                print('리밸런싱 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
+                # print('리밸런싱 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
                 
                 total_balance_account[rebalance_date] = rebalance_balance_account[rebalance_date]
-                print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
-                print()
+                # print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
+                # print()
                 
                 # 리밸런싱 할 때 마다 잔액 총합을 초기화 ->  리밸런싱하면 잔액총합이 0이됨
                 balance_amount=0
@@ -264,70 +264,70 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             
             # 날씨가 납입날짜에 있으면
             elif test_date in test_input_date_lists:
-                print("==================================")
-                print(test_date, "납입날짜")
-                print("==================================")
+                # print("==================================")
+                # print(test_date, "납입날짜")
+                # print("==================================")
                 portfolio_product_price=getPortfolioProductPrice(portfolio_product_price, test_date)
-                print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
-                print('주기적 납부하는 돈 :', input_money)
+                # print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
+                # print('주기적 납부하는 돈 :', input_money)
                 
                 tax_benefit_money += input_money # 세졔혜택 받을 금액에 추가
                 
                 input_balance_account,new_portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio, test_date)
-                print('납부때마다 추가되는 금융상품 개수 :',new_portfolio_product_count)
-                print('납부때마다 추가되는 잔액 :',input_balance_account)
+                # print('납부때마다 추가되는 금융상품 개수 :',new_portfolio_product_count)
+                # print('납부때마다 추가되는 잔액 :',input_balance_account)
                 
                 portfolio_product_count = getPortfolioProductAccumulateCount(portfolio_product_count,new_portfolio_product_count)
-                print('누적 금융상품 개수 :',portfolio_product_count)
+                # print('누적 금융상품 개수 :',portfolio_product_count)
                 
                 portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
-                print('누적 금융상품들 가치 :',portfolio_product_value)
+                # print('누적 금융상품들 가치 :',portfolio_product_value)
                 
                 portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
-                print('누적 전략별 가치 :',portfolio_strategy_value)
+                # print('누적 전략별 가치 :',portfolio_strategy_value)
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
                 total_portfolio_account[test_date]=portfolio_rebalance_value[test_date]
-                print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
+                # print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
                 
                 # 포트폴리오 가치 총합을 갱신
                 last_date = list(total_portfolio_account.keys())[-1]
                 test_start_rebalance_input_money=total_portfolio_account[last_date]
                 
                 total_balance_account=getBalaceAccumulate(input_balance_account,total_balance_account)
-                print('누적 후 잔액기록 :',total_balance_account)
+                # print('누적 후 잔액기록 :',total_balance_account)
                 
                 balance_amount=total_balance_account[list(total_balance_account.keys())[-1]]
-                print('납입한 후 리밸런싱 전까지 잔액 총합 :',balance_amount)
-                print()
+                # print('납입한 후 리밸런싱 전까지 잔액 총합 :',balance_amount)
+                # print()
                 
             else:
-                print("==================================")
-                print(test_date, "나머지경우")
-                print("==================================")
+                # print("==================================")
+                # print(test_date, "나머지경우")
+                # print("==================================")
                 portfolio_product_price=getPortfolioProductPrice(portfolio_product_price, test_date)
-                print(test_date,'금융상품 가격 :',portfolio_product_price)
+                # print(test_date,'금융상품 가격 :',portfolio_product_price)
             
                 portfolio_product_count=changeDateDictKey(portfolio_product_count,test_date)
-                print(test_date,'금융상품 개수 :',portfolio_product_count)
+                # print(test_date,'금융상품 개수 :',portfolio_product_count)
                 
                 portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
-                print(test_date,'금융상품들 가치 :',portfolio_product_value)
+                # print(test_date,'금융상품들 가치 :',portfolio_product_value)
                 
                 portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
-                print(test_date,'전략별 가치 :',portfolio_strategy_value)
+                # print(test_date,'전략별 가치 :',portfolio_strategy_value)
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
                 total_portfolio_account[test_date]=portfolio_rebalance_value[test_date]
-                print(test_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account)
+                # print(test_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account)
                 
                 # 포트폴리오 가치 총합을 갱신
                 last_date = list(total_portfolio_account.keys())[-1]
                 test_start_rebalance_input_money=total_portfolio_account[last_date]
                 
                 total_balance_account[test_date] = balance_amount
-                print('누적 후 잔액기록 :',total_balance_account)
-                print()
+                # print('누적 후 잔액기록 :',total_balance_account)
+                # print()
         
         # print()
         if tax == 0: # 세제혜택 X 인 경우 결과값들 입력
