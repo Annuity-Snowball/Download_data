@@ -1,4 +1,5 @@
 # pdf 파일의 시작날짜와, 거래가격의 시작날짜 비교하는 코드
+# 금융상품의 시작날짜인 product_start.csv를 만들기도 함!
 import os
 import pandas as pd
 
@@ -19,6 +20,7 @@ for i,pdf_file_name in enumerate(pdf_file_list): # 저장되어있는 pdf파일�
 # print('len(pdf_dict) :',len(pdf_dict))
 df_product=df_product.reset_index('product_code') # 인덱스를 컬럼으로 수정
 print(df_product.head()) # 데이터프레임 확인위해서 head 이용
+# 파일로 저장!!!!!!!!!!!
 # df_product.to_csv('C:\self_project\snowball\Download_data\product_start.csv',index=False) # csv 파일로 저장
 
 for i,price_file_name in enumerate(price_file_list):
@@ -48,7 +50,7 @@ for product_code in pdf_dict.keys():
         pdf_price_same.append(product_code)
 
 # print()
-# print("pdf가 먼저 :",pdf_early) # 이런 경우는 없는 걸로 나옴!
-# print("금융상품 거래가격이 먼저 :",price_early)
-# print("두개날짜가 같음 :",pdf_price_same)
+print("pdf가 먼저 :",pdf_early) # 이런 경우는 없는 걸로 나옴!
+print("금융상품 거래가격이 먼저 :",price_early)
+print("두개날짜가 같음 :",pdf_price_same)
 
