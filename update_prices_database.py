@@ -10,9 +10,9 @@ db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy031768
 # 기간동안의 모든 날짜들을 구하기 위한 함수
 date_lists=list()
 price_list = list()
-date = datetime.datetime(2019,12,31,12,4,5)
+date = datetime.datetime(2016,12,31,12,4,5)
 
-for i in range(900): 
+for i in range(1826): 
     date += datetime.timedelta(days=1)
     date_lists.append(str(date).split()[0])
  
