@@ -2,7 +2,9 @@ from datetime import date, timedelta
 import pymysql
 import copy
 
-from Download_data.getDatainfo import getDailyDateInfo, getPayInDateInfo, getRebalanceDateInfo
+from Download_data.getDatainfo import getDailyDateInfo, getPayInDateInfo, getRebalanceDateInfo, getYearlyDateInfo
+
+from portpolioVariables import get_portVariables, get_returns,get_winRate, get_mdd, receipt_simul,cal_receiptValue 
 
 # 포트폴리오 클래스 생성
 class Portfolio():
@@ -169,20 +171,37 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     test_input_date_lists=getPayInDateInfo(portfolio_start_time, portfolio_end_time, input_type) # 납입한 날짜는 첫번째 날짜는 포함X
     
     
+    tax_benfit_date_list = getYearlyDateInfo(portfolio_start_time, portfolio_end_time)
+    test_tax_benfit_date_list=['2020-02-03']
+    
+    # 납입하는 금액 히스토리
+    input_money_count = 0 # 납입한 횟수(달별로 납입)
+    input_money_to_portfolio=dict()
+    for test_date in test_dates:
+        if test_date in test_input_date_lists:
+            input_money_count+=1
+        input_money_to_portfolio[test_date] = input_money *input_money_count +test_start_rebalance_input_money
     
     total_balance_account=dict() # 날짜 별로 남은 잔액들 히스토리
     
     total_portfolio_account = dict() # 날짜 별로 잔액을 제외한 포트폴리오 가치 히스토리
     
+    portfolio_result = None # 포트폴리오 출력결과 변수
     
     balance_amount = 0 # 잔액 총합
     
     rebalance_date=None # 가장 최근 리밸런싱 한 날짜
     
+    tax_benefit_money =0 # 세제혜택 받을 금액
+    
     # a날짜 리밸런싱 -> a날 다음달 부터 a날 리밸런싱때 금융상품들로 주기적납부 -> b날 납부 -> b날 리밸런싱 ->  b날 다음달 부터 b날 리밸런싱때 금융상품들로 주기적납부
     
     # 백테스트기간 날짜들에 대해서 백테스트 진행!
     for test_date in test_dates:
+        
+        # 날짜가 세제환급받을 날짜들 중 하나이면
+        if test_date in test_tax_benfit_date_list:
+            print('세제혜택 받음!! :', test_date, tax_benefit_money)
         
         # 조회날짜가 리밸런싱날짜에 있으면
         if test_date in test_start_rebalance_dates:
@@ -234,6 +253,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             portfolio_product_price=getPortfolioProductPrice(portfolio_product_price, test_date)
             print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
             print('주기적 납부하는 돈 :', input_money)
+            
+            tax_benefit_money += input_money # ##########################세졔혜택 받을 금액에 추가
             
             input_balance_account,new_portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
             print('납부때마다 추가되는 금융상품 개수 :',portfolio_product_count)
@@ -293,12 +314,22 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     
     print()
     real_portfolio_account=getRealPortfolioValue(total_portfolio_account,total_balance_account)
-    print('포트폴리오 가치 추이(잔액포함X):',total_portfolio_account)
-    print()
-    print('잔액추이', total_balance_account)
-    print()
-    print('포트폴리오 가치 추이(잔액포함0):',real_portfolio_account)
+    portfolio_result = get_portVariables(real_portfolio_account,input_money_to_portfolio)
+    portfolio_receipt = receipt_simul(portfolio_result,10) # 몇년 수령할지 입력(10년 디폴트이고 나중에 사용자 맞게 수정 가능)
     
+    # print('포트폴리오 가치 추이(잔액포함X):',total_portfolio_account)
+    # print()
+    # print('잔액추이', total_balance_account)
+    # print()
+    print('포트폴리오 가치 추이(잔액포함0):',real_portfolio_account)
+    print()
+    print('포트폴리오 납입금액 추이:', input_money_to_portfolio)
+    print()
+    print('포트폴리오 결과 :',portfolio_result)
+    print()
+    print('포트폴리오 수령방법 :',portfolio_receipt)
+    print()
+    print('추가 구현할 세제환급 날짜들 :', tax_benfit_date_list)
  
 # 날짜지정이 안되어 있는 쿼리문에서 날짜를 지정하는 부분을 추가해서 반환하는 함수 - 리밸런싱 날짜들을 받자!
 def getProductTicker(sql_query,interval_dates):
