@@ -239,7 +239,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
                 
                 print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
                 
-                rebalance_balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio)
+                rebalance_balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio,test_date)
                 print('리밸런싱 후 금융상품들 개수 :', portfolio_product_count)
                 print("리밸런싱 후 잔액 :", rebalance_balance_account)
                 
@@ -273,7 +273,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
                 
                 tax_benefit_money += input_money # 세졔혜택 받을 금액에 추가
                 
-                input_balance_account,new_portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio)
+                input_balance_account,new_portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio, test_date)
                 print('납부때마다 추가되는 금융상품 개수 :',new_portfolio_product_count)
                 print('납부때마다 추가되는 잔액 :',input_balance_account)
                 
@@ -439,14 +439,16 @@ def getPortfolioProductPrice(portfolio_rebalance_product_price, test_date):
     product_price = copy.deepcopy(portfolio_rebalance_product_price)
     for strategy_kind_dict in product_price:
         for strategy_kind_key in strategy_kind_dict.keys():
-            temp = strategy_kind_dict[strategy_kind_key]
+            temp = strategy_kind_dict[strategy_kind_key] # temp 는 ex) {'2019-10-02': [['euro', 15963.0], ['spy', 12394.0]]}
+            if len(list(temp.keys())) ==0: # 전략으로 인해 담을 금융상품이 없는 경우
+                continue
             temp[test_date] = temp.pop(list(temp.keys())[0])
             for i,product_list in enumerate(temp[test_date]):
                 temp[test_date][i] = getProductPrice(test_date,product_list[0])
     return product_price
 
 # 주기적으로 납입한 날의 새로 구매한 금융상품들 개수을 반환 - 
-def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
+def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio, test_date):
     """_summary_
 
     Args:
@@ -462,7 +464,7 @@ def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
     portfolio_product_count=copy.deepcopy(portfolio_product_price)
     
     input_balance_account=dict()
-
+    input_balance_account[test_date] = 0
     input_money_ratio=list()
 
     for i in strategy_ratio:
@@ -473,26 +475,26 @@ def getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio):
     # 전략별로 돌면서 실행
     for i,money in enumerate(input_money_ratio):
         product_price_dict = list(portfolio_product_count[i].values())[0]
+        if len(list(product_price_dict)) <=0: # 전략에 해당하는 금융상품이 없을 때
+            input_balance_account[test_date] += money # 할당 금액 전체가 잔액이 된다
+            continue
         # print('product_price_dict :', product_price_dict) # {'2021-01-01': [['bank', 1269.0], ['energy', 4456.0], ['kospi', 22654.0]], '2021-02-01': [['bank', 1853.0], ['energy', 4145.0], ['kospi', 26166.0]], '2021-03-01': [['bank', 2048.0], ['energy', 3491.0], ['kospi', 14086.0]], '2021-04-01': [['bank', 2287.0], ['energy', 4060.0], ['kospi', 13185.0]]}
-        product_price_dict_keys = list(product_price_dict.keys())
+      
         # print('product_price_dict_keys :', product_price_dict_keys) #  ['2021-01-01', '2021-02-01', '2021-03-01', '2021-04-01']
         
             
-        for product_price_dict_key in product_price_dict_keys:
-            if i ==0:
-                input_balance_account[product_price_dict_key]=0
-            price_lists=product_price_dict[product_price_dict_key] # [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]] 
-            # print('price_lists :',price_lists)
-            money_to_price_list = money//len(price_lists)
-            # print('money_to_price_list :',money_to_price_list)
-            for price_list in price_lists:
-                input_balance_account[product_price_dict_key] += money_to_price_list % price_list[1]
-                price_list[1] = int(money_to_price_list // price_list[1])
+        price_lists=product_price_dict[test_date] # [['bank', 2048.0], ['kospi', 14086.0], ['energy', 3491.0]] 
+        # print('price_lists :',price_lists)
+        money_to_price_list = money//len(price_lists)
+        # print('money_to_price_list :',money_to_price_list)
+        for price_list in price_lists:
+            input_balance_account[test_date] += money_to_price_list % price_list[1]
+            price_list[1] = int(money_to_price_list // price_list[1])
     
     # 일자별 잔액현황하고, 일자별 포트폴리오의 금융상품 개수들 반환
     return input_balance_account,portfolio_product_count
 
-# 누적되는 금융상품개수 구하는 함수
+# 누적되는 금융상품개수 구하는 함수, 후자의 파라미터가 새로 구매한 금융상품 개수
 def getPortfolioProductAccumulateCount(Portfolio_rebalance_product_count,Portfolio_product_count):
     
     portfolio_rebalance_product_count = copy.deepcopy(Portfolio_rebalance_product_count)
@@ -501,6 +503,8 @@ def getPortfolioProductAccumulateCount(Portfolio_rebalance_product_count,Portfol
     for i in range(len(portfolio_product_count)):
         product_strategy_key=list(portfolio_product_count[i].keys())[0]
         product_strategy_value=portfolio_product_count[i][product_strategy_key]
+        if len(list(product_strategy_value))<=0: # 전략에 해당하는 금융상품이 없는 경우
+            continue # 차피 상품이 없을 것으므로 continu
         product_strategy_value_key=list(product_strategy_value.keys())[0] # strategy_value_keys 는 '2021-05-01' 등 날짜들
         
         rebalance_product_strategy_key=list(portfolio_rebalance_product_count[i].keys())[0]
@@ -573,27 +577,27 @@ def getPortfolioRebalanceProductPrice(stratgy_sql_query_list,strategy_kinds,reba
     return portfolio_rebalance_product_price
 
 # 리밸런싱 하는 날들에 새로 구매한 금융상품들과 그 개수를 반환, 잔액도 반환 - 리밸런싱에 사용
-def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_money,strategy_ratio):
+def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_money,strategy_ratio,test_date):
     
     portfolio_rebalance_product_count=copy.deepcopy(portfolio_rebalance_product_price)
     
 
-    rebalance_balance_account=dict()
+    rebalance_balance_account=dict() # 일자별 잔액현황 선언
+    rebalance_balance_account[test_date] =0 # 일자별 잔액현황 초기화
     input_money_ratio=list()
     for amount in strategy_ratio:
         input_money_ratio.append(amount*rebalance_input_money//100)
 
     # print('input_money_ratio :',input_money_ratio)
-    
     # for i,input_money_ratio in enumerate(input_money_ratio_list): # input_money_ratio_list 는 [[400000, 600000], [800000, 1200000], [1200000, 1800000]] 
         #전략별로 반복
     for j,strategy_kind_money in enumerate(input_money_ratio): # input_money_ratio 는 ex) [400000, 600000], strategy_kind_money는 한 전략을 구입할 금액
         product_price_dict = list(portfolio_rebalance_product_count[j].values())[0]
-        product_price_dict_keys = list(product_price_dict.keys()) # ['2021-01-01', '2021-07-01', '2022-01-01']
-        price_lists=product_price_dict[product_price_dict_keys[0]]
         
-        if j ==0:
-            rebalance_balance_account[product_price_dict_keys[0]]=0
+        if len(product_price_dict) <= 0: # 해당 전략으로 살 상품이 없는경우
+            rebalance_balance_account[test_date] +=strategy_kind_money # 할당된 금액 전체가 잔액이 된다
+            continue
+        price_lists=product_price_dict[test_date]
             
         # print('strategy_kind_money :', strategy_kind_money)
         # print('price_lists :', price_lists)
@@ -602,13 +606,13 @@ def getPortfolioRabalanceInfo(portfolio_rebalance_product_price,rebalance_input_
         # print('before balance_account : ',balance_account)
         for price_list in price_lists:
             # print('price_list[1] :',price_list[1])
-            rebalance_balance_account[product_price_dict_keys[0]] += strategy_product_money%price_list[1]
+            rebalance_balance_account[test_date] += strategy_product_money%price_list[1]
             # print('after balance_account : ',balance_account)
             price_list[1] = int(strategy_product_money//price_list[1])
                 
             # print('after price_lists :', price_lists)
-            # print()
-  
+            # print()  
+            
     # 일자별 잔액현황하고, 일자별 포트폴리오의 금융상품 개수들 반환
     return rebalance_balance_account, portfolio_rebalance_product_count
 
@@ -672,6 +676,8 @@ def changeDateDictKey(product_count,new_date):
     for i in range(len(product_count)):
         price_strategy_key=list(product_count[i].keys())[0]
         price_strategy_value=product_count[i][price_strategy_key]
+        if len(list(price_strategy_value.keys())) <=0: # 전략에 해당하는 금융상품이 없는 경우
+            continue
         price_strategy_value[new_date]=price_strategy_value.pop(list(price_strategy_value.keys())[0])
     return(product_count)
 
