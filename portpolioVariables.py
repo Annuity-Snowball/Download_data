@@ -32,20 +32,21 @@ def get_portVariables(dict_realvalue, dict_inputmoney):
     # print("승률: ", win_rate, "%")
     # print(mdd)
     # print(df['return'].to_dict())
+    portfolio_result['투입한 금액'] = dict_inputmoney[list(dict_inputmoney.keys())[-1]]
+    portfolio_result['포트폴리오 가치'] = df.iloc[-1, 1]  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
+    
+    portfolio_result['총 수익률'] = df.iloc[-1, 2]
+    portfolio_result['월 수익률 추이'] = monthlyReturn(dict_realvalue)
+    portfolio_result['일별 수익률'] = dict(zip(df.index, df['return']))
     portfolio_result['승률'] = win_rate
     portfolio_result['MDD'] = mdd
-    portfolio_result['수익률'] = dict(zip(df.index, df['return']))
-    portfolio_result['포트폴리오 가치'] = df.iloc[-1, 1]  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
-    portfolio_result['누적 수익률'] = df.iloc[-1, 2]
-    portfolio_result['월 수익률 추이'] = monthlyReturn(dict_realvalue)
 
     return portfolio_result
 
 
 def get_returns(df):
     df['return'] = (df['value'] - df['seed']) / df['seed']  # +df['cash'] #일별수익률 계산해서 열 추가 (월간수익률(납입일 기준),추가 가능)
-    df['return'] = df['return'].round(4)
-    df['return'] = df['return'] * 100
+    df['return'] = ((df['return'].round(4))*100).round(2)
 
 
 def monthlyReturn(dict_realvalue):
