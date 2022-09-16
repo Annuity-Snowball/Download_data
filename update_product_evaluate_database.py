@@ -15,8 +15,8 @@ date_lists=list()
 # operating_to_revenue_ratio_list = list()
 # liabilities_to_assets_ratio_list = list()
 
-date = datetime.datetime(2019,12,31,12,4,5)
-for i in range(900): 
+date = datetime.datetime(2016,12,31,12,4,5)
+for i in range(1826): 
     date += datetime.timedelta(days=1)
     date_lists.append(str(date).split()[0])
  
