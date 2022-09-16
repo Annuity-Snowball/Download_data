@@ -1,3 +1,4 @@
+# 금융 상품들의 가격들을 저장 하는 함수
 import FinanceDataReader as fdr
 import pandas as pd
 
