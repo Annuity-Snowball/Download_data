@@ -22,7 +22,7 @@ for i,pdf_file_name in enumerate(pdf_file_list): # 저장되어있는 pdf파일�
 df_product=df_product.reset_index('product_code') # 인덱스를 컬럼으로 수정
 print(df_product.head()) # 데이터프레임 확인위해서 head 이용
 # 파일로 저장!!!!!!!!!!!
-# df_product.to_csv('C:\self_project\snowball\Download_data\product_start.csv',index=False) # csv 파일로 저장
+# df_product.to_csv('C:\self_project\snowball\Download_data\product_pdf_start.csv',index=False) # csv 파일로 저장
 
 for i,price_file_name in enumerate(price_file_list):
     df = pd.read_csv('C:\self_project\snowball\Download_data\product_price\\'+price_file_name) # 해당파일을 읽음
