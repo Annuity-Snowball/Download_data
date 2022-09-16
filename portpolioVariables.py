@@ -44,7 +44,7 @@ def get_portVariables(dict_realvalue, dict_inputmoney):
 
 def get_returns(df):
     df['return'] = (df['value'] - df['seed']) / df['seed']  # +df['cash'] #일별수익률 계산해서 열 추가 (월간수익률(납입일 기준),추가 가능)
-    df['return'] = df['return'].round(2)
+    df['return'] = df['return'].round(4)
 
 
 def monthlyReturn(dict_realvalue):
