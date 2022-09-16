@@ -37,7 +37,7 @@ def get_portVariables(dict_realvalue, dict_inputmoney):
     portfolio_result['수익률'] = dict(zip(df.index, df['return']))
     portfolio_result['포트폴리오 가치'] = df.iloc[-1, 1]  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
     portfolio_result['누적 수익률'] = df.iloc[-1, 2]
-    portfolio_result['월 수익률 추이'] = monthlyReturn(real_portfolio_account)
+    portfolio_result['월 수익률 추이'] = monthlyReturn(dict_realvalue)
 
     return portfolio_result
 
