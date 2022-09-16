@@ -11,12 +11,11 @@ from pandas_datareader import data as pdr
 # 연최고 수익률: return column의 max value
 # 연최저 수익률: return column의 min value
 
-
 # 누적수익률
 # gross_ret = df['return']+1
 # df['cum_ret'] = gross_ret.cumprod() - 1
 
-def get_portVariables(dict_realvalue, dict_inputmoney, rebalanceDateList):
+def get_portVariables(dict_realvalue, dict_inputmoney):
     portfolio_result = dict()
     values = dict()
     for key in dict_inputmoney.keys():
@@ -27,7 +26,7 @@ def get_portVariables(dict_realvalue, dict_inputmoney, rebalanceDateList):
     df = pd.DataFrame.from_dict(values, orient='index', columns=['seed', 'value'])  # 넘겨받은 사전 데이터 데이터프레임으로 변환
 
     get_returns(df)  # 수익률 계산
-    win_rate = get_winRate(df, rebalanceDateList)  # 승률 계산해서 저장 (리밸런싱 날짜 기준)
+    win_rate = get_winRate(df)  # 승률 계산해서 저장 (리밸런싱 날짜 기준)
     mdd = get_mdd(df)  # mdd 계산
     # print(df)
     # print("승률: ", win_rate, "%")
@@ -35,9 +34,11 @@ def get_portVariables(dict_realvalue, dict_inputmoney, rebalanceDateList):
     # print(df['return'].to_dict())
     portfolio_result['승률'] = win_rate
     portfolio_result['MDD'] = mdd
-    portfolio_result['수익률'] = list(df['return'].to_dict())
+    portfolio_result['수익률'] = dict(zip(df.index, df['return']))
     portfolio_result['포트폴리오 가치'] = df.iloc[-1, 1]  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
-    portfolio_result['운용 평균 수익률'] = df['return'].mean()
+    portfolio_result['누적 수익률'] = df.iloc[-1, 2]
+    portfolio_result['월 수익률 추이'] = monthlyReturn(real_portfolio_account)
+
     return portfolio_result
 
 
@@ -46,15 +47,52 @@ def get_returns(df):
     df['return'] = df['return'].round(2)
 
 
-def get_winRate(df, rebalace_dateInfoList):
+def monthlyReturn(dict_realvalue):
+    # 입력: 포트폴리오 가치
+    realValue = dict()
+    rtDict = dict()
+    realValue = dict_realvalue
+    mfValue = realValue[next(iter(realValue))]  # 월 초 가치, 초기값: 시작 날 가치
+    mlValue = realValue[next(iter(realValue))]  # 월 말 가치
+    month = next(iter(realValue))
+    firstmonth = month.split('-')[1]
+    ymonth = month.split('-')[0] + '-' + month.split('-')[1]
+    monthCount = 1
+
+    keyList = []
+    for key in realValue.keys():
+        keyList.append(key)
+
+    for i in range(len(keyList)):
+        splitkey = keyList[i].split('-')
+        mlValue = realValue[keyList[i - 1]]  # 월 말 value 보존
+        if (splitkey[1] != firstmonth):  # 월 변경될 경우
+            rtDict[ymonth] = round((mlValue - mfValue) / mfValue * 100, 2)  # 월 수익률 계산
+            mfValue = realValue[keyList[i]]  # 월 초 값 갱신
+            ymonth = splitkey[0] + "-" + splitkey[1]  # 연-월 갱신 (딕셔너리 생성에 사용)
+            firstmonth = splitkey[1]  # 월 갱신 (월 비교에 사용)
+            monthCount = monthCount + 1  # 운용 개월 수 체크
+
+        rtDict[ymonth] = round((realValue[key] - mfValue) / mfValue * 100, 2)  # realValue[key]: 마지막 날 수익률 마지막 달 수익률 계산
+
+    sum_MonthlyReturn = 0
+    for key in rtDict.keys():
+        sum_MonthlyReturn = sum_MonthlyReturn + rtDict[key]
+
+    rtDict['월 수익률 평균'] = round(sum_MonthlyReturn / monthCount, 2)
+
+    return (rtDict)
+
+
+def get_winRate(df):
     # 리밸런싱 날짜 리스트받아서, 해당하는 날짜들의 승률 계산해서 반환
     win_count = 0
 
-    for i in rebalace_dateInfoList:
+    for i in df.index:
         if df.loc[i, 'return'] >= 0:
             win_count = win_count + 1
 
-    return round((win_count) / (len(rebalace_dateInfoList)) * 100, 2)
+    return round((win_count) / (len(df.index)) * 100, 2)
 
 
 def get_mdd(df):
@@ -120,7 +158,6 @@ def receipt_simul(portfolioResult, receiptYear):
 
     rtDict2['잔액'] = cum_value2
 
-
     # print("수령방식: ", receiptWay)
     # print()
     # print("포트폴리오 누적 가치: ", cum_value)
@@ -132,8 +169,11 @@ def receipt_simul(portfolioResult, receiptYear):
     rtList = [rtDict1, rtDict2]
     return rtList
 
+
 def cal_receiptValue(year, value):
     if year == 10:
         return value
 
     return value / (11 - year) * 1.2
+
+# print(get_portVariables(real_portfolio_account, input_money_to_portfolio))
