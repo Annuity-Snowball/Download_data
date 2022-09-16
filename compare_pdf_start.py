@@ -1,5 +1,6 @@
 # pdf 파일의 시작날짜와, 거래가격의 시작날짜 비교하는 코드
 # 금융상품의 시작날짜인 product_start.csv를 만들기도 함!
+# 결과적으로는 상품의 거래가격 시작이 pdf알 수 잇는 날짜보다 먼저 이므로, pdf 알수 있는 날짜를 시작 날짜로 계산해 버리자!
 import os
 import pandas as pd
 
