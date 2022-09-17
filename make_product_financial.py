@@ -77,11 +77,11 @@ df_totol_PL = df_totol_PL.apply(make_date_to_int, axis=1)
 # display(df_totol_PL)
 
 # financial 데이터프레임(결과물) df_financial 을 생성(컬럼들은 금융상품코드, pdf 일자, 재무지표들)
-df_financial = pd.DataFrame({},columns=['금융상품코드','날짜','추정매출액','추정영업이익','추정당기순이익','추정유동자산','추정자산총계','추정유동부채','추정부채총계',])
+df_financial = pd.DataFrame({},columns=['금융상품코드','날짜','추정매출액','추정영업이익','추정당기순이익','추정유동자산','추정자산총계','추정유동부채','추정부채총계'])
 
 
 # 걸러진 파일들을 모두에 적용(for를 통해) - 각 시점에서 재무지표들 업데이트 할 것! 
-for need_pdf_file in need_pdf_file_list:
+for i,need_pdf_file in enumerate(need_pdf_file_list):
     # print(need_pdf_file)
     # pdf파일을 데이터프레임 df_pdf 으로 읽기
     df_pdf = pd.read_csv("C:\\Users\\LG\\Desktop\\pdf_files\\" + need_pdf_file,encoding='cp949')
@@ -107,30 +107,32 @@ for need_pdf_file in need_pdf_file_list:
     df_pdf['곱 변수'] = df_pdf['주식수(계약수)'] / df_pdf['상장주식수'] # 전체주식수대비 금융상품이 가지고 있는 주식수의 비율을 구함
     
     # 재무 지표들을 업데이트
-    df_pdf['추정매출액'] = df_pdf['매출액'] * df_pdf['곱 변수']
-    df_pdf['추정영업이익'] = df_pdf['영업이익'] * df_pdf['곱 변수']
-    df_pdf['추정당기순이익'] = df_pdf['당기순이익'] * df_pdf['곱 변수']
-    df_pdf['추정추정유동자산'] = df_pdf['유동자산'] * df_pdf['곱 변수']
-    df_pdf['추정자산총계'] = df_pdf['자산총계'] * df_pdf['곱 변수']
-    df_pdf['추정유동부채'] = df_pdf['유동부채'] * df_pdf['곱 변수']
-    df_pdf['추정부채총계'] = df_pdf['부채총계'] * df_pdf['곱 변수']
+    df_pdf['매출액'] = df_pdf['매출액'] * df_pdf['곱 변수']
+    df_pdf['영업이익'] = df_pdf['영업이익'] * df_pdf['곱 변수']
+    df_pdf['당기순이익'] = df_pdf['당기순이익'] * df_pdf['곱 변수']
+    df_pdf['유동자산'] = df_pdf['유동자산'] * df_pdf['곱 변수']
+    df_pdf['자산총계'] = df_pdf['자산총계'] * df_pdf['곱 변수']
+    df_pdf['유동부채'] = df_pdf['유동부채'] * df_pdf['곱 변수']
+    df_pdf['부채총계'] = df_pdf['부채총계'] * df_pdf['곱 변수']
     
     # 사용하지 않을 컬럼들을 삭제
-    df_pdf=df_pdf.drop(['종목코드','구성종목명','주식수(계약수)','평가금액','시가총액','시가총액 구성비중','곱 변수','상장주식수','매출액','영업이익','당기순이익','유동자산','자산총계','유동부채','부채총계'], axis=1)
+    df_pdf=df_pdf.drop(['종목코드','구성종목명','주식수(계약수)','평가금액','시가총액','시가총액 구성비중','곱 변수','상장주식수'], axis=1)
     df_pdf = df_pdf.replace([np.inf, -np.inf], np.nan) # 값이 무한으로 되어있는 부분은 결측치로 수정
     df_pdf = df_pdf.fillna(0)# 결측치들은 0으로 수정
     df_pdf =df_pdf.sum() # 각 컬럼별 합들을 구함
+    new_row = {'금융상품코드':need_pdf_file.split('.')[0].split('_')[0], '날짜':need_pdf_file.split('.')[0].split('_')[1], 
+               '추정매출액':df_pdf['매출액'], '추정영업이익':df_pdf['영업이익'],
+               '추정당기순이익':df_pdf['당기순이익'],'추정유동자산':df_pdf['유동자산'],
+               '추정자산총계':df_pdf['자산총계'],'추정유동부채':df_pdf['유동부채'],'추정부채총계':df_pdf['부채총계']}
     
-    df_pdf['금융상품코드'] = need_pdf_file.split('.')[0].split('_')[0]
-    df_pdf['날짜'] = need_pdf_file.split('.')[0].split('_')[1]
- 
-    # df_financial = pd.concat([df_financial, df_pdf],axis=0)
-    print('df_pdf')
-    display(df_pdf)
-    print('df_financial')
+    df_financial.loc[len(df_financial.index)] = [need_pdf_file.split('.')[0].split('_')[0], need_pdf_file.split('.')[0].split('_')[1], df_pdf['매출액'],
+                                                 df_pdf['영업이익'], df_pdf['당기순이익'],df_pdf['유동자산'],df_pdf['자산총계'],df_pdf['유동부채'],df_pdf['부채총계']] 
+    #append row to the dataframe
+    # print(new_row)
     display(df_financial)
+    
     # 재무제표에서 해당주식 정보가 준비할 경우 업데이트
- 
+df_financial.to_csv('C:\self_project\snowball\Download_data\\product_financial.csv', index=False,encoding='cp949') 
     # 금융상품의 각 주식들에 각각 주식재무지표들값 * (구성주식수들/주식상장주식수) 해서 새로생성되는 재무지표들을 계산
     
     # df_financial에 행 하나씩 추가
