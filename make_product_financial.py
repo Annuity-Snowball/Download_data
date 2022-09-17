@@ -81,7 +81,7 @@ df_financial = pd.DataFrame({},columns=['금융상품코드','날짜','추정매
 
 
 # 걸러진 파일들을 모두에 적용(for를 통해) - 각 시점에서 재무지표들 업데이트 할 것! 
-for i,need_pdf_file in enumerate(need_pdf_file_list[3000:]):
+for i,need_pdf_file in enumerate(need_pdf_file_list):
     # print(need_pdf_file)
     # pdf파일을 데이터프레임 df_pdf 으로 읽기
     df_pdf = pd.read_csv("C:\\Users\\LG\\Desktop\\pdf_files\\" + need_pdf_file,encoding='cp949')
