@@ -58,10 +58,10 @@ def update_stockamount_to_dfpdf(df_pdf):
 need_pdf_file_list = list()
 origin_pdf_file_list = os.listdir('C:\\Users\\LG\\Desktop\\pdf_files')
 for origin_pdf_file in origin_pdf_file_list:
-    if 20170101<=int(origin_pdf_file.split('.')[0].split('_')[1]) and 20211231>=int(origin_pdf_file.split('.')[0].split('_')[1]):
+    if 20170101<=int(origin_pdf_file.split('.')[0].split('_')[1]) and 20181231>=int(origin_pdf_file.split('.')[0].split('_')[1]):
         need_pdf_file_list.append(origin_pdf_file)
 
-
+print(len(need_pdf_file_list))
 # 주식수를 알기 위해서 after_pdf_kr_stock_list 데이터프레임으로 읽기
 df_stock_amount=pd.read_csv("C:\\self_project\\snowball\\Download_data\\after_pdf_kr_stock_list.csv",encoding='cp949')
 
@@ -81,7 +81,7 @@ df_financial = pd.DataFrame({},columns=['금융상품코드','날짜','추정매
 
 
 # 걸러진 파일들을 모두에 적용(for를 통해) - 각 시점에서 재무지표들 업데이트 할 것! 
-for i,need_pdf_file in enumerate(need_pdf_file_list):
+for i,need_pdf_file in enumerate(need_pdf_file_list[3000:]):
     # print(need_pdf_file)
     # pdf파일을 데이터프레임 df_pdf 으로 읽기
     df_pdf = pd.read_csv("C:\\Users\\LG\\Desktop\\pdf_files\\" + need_pdf_file,encoding='cp949')
@@ -97,13 +97,16 @@ for i,need_pdf_file in enumerate(need_pdf_file_list):
     df_need_PL = df_need_PL.drop(df_need_PL[df_need_PL['결산기준일차이'] > 0].index)
     df_need_BS = df_need_BS.drop(df_need_BS[df_need_BS['결산기준일차이'] > 0].index)
     
+    
     df_need_PL= df_need_PL.apply(add_0_to_stock_code, axis=1) # 종목코드들에 '0'을 붙여서 종목코드 만듬
     df_need_BS= df_need_BS.apply(add_0_to_stock_code, axis=1)
+    
     # 
     df_pdf=df_pdf.apply(update_dfPL_to_dfpdf, axis=1) # 손익계산서의 내용들을 업데이트
     df_pdf=df_pdf.apply(update_dfBS_to_dfpdf, axis=1) # 재무상태표의 내용들을 업데이트
     
     df_pdf=df_pdf.apply(update_stockamount_to_dfpdf, axis=1) # 상장 주식수들을 업데이트
+    # display(df_pdf)
     df_pdf['곱 변수'] = df_pdf['주식수(계약수)'] / df_pdf['상장주식수'] # 전체주식수대비 금융상품이 가지고 있는 주식수의 비율을 구함
     
     # 재무 지표들을 업데이트
@@ -127,12 +130,12 @@ for i,need_pdf_file in enumerate(need_pdf_file_list):
     
     df_financial.loc[len(df_financial.index)] = [need_pdf_file.split('.')[0].split('_')[0], need_pdf_file.split('.')[0].split('_')[1], df_pdf['매출액'],
                                                  df_pdf['영업이익'], df_pdf['당기순이익'],df_pdf['유동자산'],df_pdf['자산총계'],df_pdf['유동부채'],df_pdf['부채총계']] 
-    #append row to the dataframe
+    
     # print(new_row)
-    display(df_financial)
+    print(df_financial)
     
     # 재무제표에서 해당주식 정보가 준비할 경우 업데이트
-df_financial.to_csv('C:\self_project\snowball\Download_data\\product_financial.csv', index=False,encoding='cp949') 
+    df_financial.to_csv('C:\\Users\\LG\\Desktop\\product_financial\\product_financial_'+str(i)+'.csv', index=False,encoding='cp949') 
     # 금융상품의 각 주식들에 각각 주식재무지표들값 * (구성주식수들/주식상장주식수) 해서 새로생성되는 재무지표들을 계산
     
     # df_financial에 행 하나씩 추가
