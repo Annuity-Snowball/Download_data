@@ -3,7 +3,14 @@ import os
 import pandas as pd
 from IPython.display import display
 import numpy as np
+import pymysql
+import datetime
+import random
 
+# 2. 접속하기 - 해당 데이터 베이스에 접속
+db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
+# 3. 커서 가져오기 - #cursor 는 control structure of database로, ecommerce 대신 어떤 변수명으로 하든 상관없음 
+snowball=db.cursor() 
 
 def make_date_type(df):
     df['product_ticker'] = str(int(df['product_ticker']))
@@ -64,4 +71,19 @@ df_sql['product_date'] = pd.to_datetime(df_sql['product_date'], format='%Y%m%d')
 
 df_sql = df_sql.apply(make_date_type, axis=1)
 
-df_sql.to_csv('C:\self_project\snowball\Download_data\\product_evaluate.csv', index=False,encoding='cp949') 
+# df_sql.to_csv('C:\self_project\snowball\Download_data\\product_evaluate.csv', index=False,encoding='cp949') 
+
+
+for i in range(len(df_sql)):
+    sql = """
+        INSERT INTO product_evaluate (product_ticker, product_date, per, pbr,psr, roe,roa ,operating_to_revenue_ratio, liabilities_to_assets_ratio,current_liabilities_to_assets_ratio) VALUES
+        ('"""+str(df_sql.loc[i]['product_ticker'])+"""','"""+str(df_sql.loc[i]['product_date'])+"""', """+str(df_sql.loc[i]['per'])+""", """+str(df_sql.loc[i]['pbr'])+""", """+str(df_sql.loc[i]['psr'])+""", 
+        """+str(df_sql.loc[i]['roe'])+""","""+str(df_sql.loc[i]['roa'])+""","""+str(df_sql.loc[i]['operating_to_revenue_ratio'])+""", """+str(df_sql.loc[i]['liabilities_to_assets_ratio'])+""", """+str(df_sql.loc[i]['current_liabilities_to_assets_ratio'])+"""); 
+    """
+    print(sql)
+    snowball.execute(sql) 
+
+    db.commit()
+
+# 7. DB 연결 닫기 - 사용한 후 연결끊기
+db.close() 
