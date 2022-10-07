@@ -14,7 +14,7 @@ class Portfolio():
     """
     
     # 객체 생성할 때 초기화하는 매소드 입니다
-    def __init__(self,portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money):
+    def __init__(self, portfolio_name, start_money, strategy_ratio, start_time, end_time, rebalance_cycle, input_type, input_money):
         """
         포트폴리오 아이디를 데이터베이스에서 받는 부분은 구현 필요 합니다
         오류를 출력하는 부분(print(error))들은 예외 처리로 수정 필요합니다.
@@ -33,23 +33,17 @@ class Portfolio():
         # 포트폴리오아이디 생성
         self.portfolio_id='123456' # 추후 수정 필요
         
+        
+        # 포트폴리오 시작금액 입력받음
+        self.start_money = start_money
+        
         # 포트폴리오명 입력받음
         self.portfolio_name = portfolio_name
         
-        # 구성 전략 개수 입력받기 - 5개가 맥스
-        if strategy_count<=5:
-            self.strategy_count=strategy_count
-        elif strategy_count>5: 
-            print('error!') # 추후 수정 필요,
             
         # 구성 전략 개수 별 비율 입력 받기
-        self.strategy_ratio=list()
-        for i in range(self.strategy_count):
-            strategy_ratio=int(input('{}번째 전략은 포트폴리오의 몇 퍼센트? '.format(i+1)))
-            self.strategy_ratio.append(strategy_ratio)
+        self.strategy_ratio= strategy_ratio
             
-        if sum(self.strategy_ratio)!=100:
-            print('error') # 추후 수정 필요
             
         # 포트폴리오 시작날짜, 끝날짜 입력받음(둘다 str 형태)
         self.start_time=start_time
@@ -61,7 +55,7 @@ class Portfolio():
         # 납입방법 입력 받음
         self.input_type = input_type
         
-        # 납입금액 입력받음
+        # 주기적납입금액 입력받음
         self.input_money = input_money
         
         # 데이터베이스에 업데이트하는 부분 - sql 쿼리문
@@ -69,7 +63,7 @@ class Portfolio():
     
     # 메인함수에서 '백테스트'에 사용할 '포트폴리오 객체 정보'들을 넘겨주는 매소드
     def returnToBacktest(self):
-        return self.portfolio_id, self.strategy_ratio, self.start_time, self.end_time, self.rebalance_cycle, self.input_type, self.input_money
+        return self.portfolio_id, self.start_money, self.strategy_ratio, self.start_time, self.end_time, self.rebalance_cycle, self.input_type, self.input_money
               
 # 전략 클래스 생성
 class Strategy():
@@ -78,7 +72,7 @@ class Strategy():
     """
     
     # 객체 생성할 때 초기화하는 매소드 입니다
-    def __init__(self,strategy_kind, product_count_per_strategy):
+    def __init__(self,strategy_kind, product_count_per_strategy,min_value,max_value):
         """
         Args:
             strategy_kind (str): 전략종류(ex-'PER 저')를 입력 받음
@@ -88,9 +82,11 @@ class Strategy():
         self.strategy_kind=strategy_kind
         self.product_count_per_strategy = product_count_per_strategy
         if self.strategy_kind == 'PER':
-            self.per_min = input('per은 몇 이상? : ')
-            self.per_max = input('per은 몇 이하? : ')
-        
+            self.min_value = min_value
+            self.max_value = max_value
+        else:
+            self.min_value = 0
+            self.max_value = 0
         
     # 전략에 해당하는 금융상품티커를 조회하는데 사용하는 쿼리문  반환하는 매소드
     def getProductListQuery(self):
@@ -111,7 +107,7 @@ class Strategy():
         # 평가지표의 범위를 입력받을 경우    
         elif self.strategy_kind == 'PER':
             # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-            self.sql_query='select product_date,product_ticker from product_evaluate where per >= '+self.per_min+' and per <='+self.per_max+' order by per asc limit '+str(self.product_count_per_strategy)
+            self.sql_query='select product_date,product_ticker from product_evaluate where per >= '+str(self.min_value)+' and per <='+str(self.max_value)+' order by per asc limit '+str(self.product_count_per_strategy)
         
         elif self.strategy_kind == 'PBR 저':
             # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
@@ -124,10 +120,10 @@ class Strategy():
         # 위에서의 'PER 저', 'PER 고' 같이 모든 평가 지표들 마다 쿼리문을 작성할 것
         pass
         
-        return self.strategy_kind,self.sql_query
+        return self.strategy_kind, self.sql_query
 
 # 백테스트 함수 생성
-def backTesting(portfolio_id, strategy_ratio, portfolio_start_time, 
+def backTesting(portfolio_id, start_rebalance_input_money, strategy_ratio, portfolio_start_time, 
                 portfolio_end_time, rebalance_cycle, input_type, input_money, 
                 strategy_kinds, stratgy_sql_query_list):
     """
@@ -165,9 +161,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     test_start_rebalance_dates=getRebalanceDateInfo(portfolio_start_time, portfolio_end_time, input_type, rebalance_cycle) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
     
     # 처음 시작하는 금액 -> 초기금액이 없을 경우 0원으로 계산해야 함
-    test_start_rebalance_input_money=int(input("초기금액을 입력하세요 :"))
     # test_start_rebalance_input_money = 1000000
-    default_test_start_rebalance_input_money = test_start_rebalance_input_money # test_start_rebalance_input_money가 세제혜택X에서 사용되면서 변수값이 변해서 따로 default를 선언
+    default_test_start_rebalance_input_money = start_rebalance_input_money # test_start_rebalance_input_money가 세제혜택X에서 사용되면서 변수값이 변해서 따로 default를 선언
     
     # 납입하는 날짜들을 담은 리스트(테스트용)
     test_input_date_lists=getPayInDateInfo(portfolio_start_time, portfolio_end_time, input_type) # 납입한 날짜는 첫번째 날짜는 포함X
@@ -182,7 +177,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
     for test_date in test_dates:
         if test_date in test_input_date_lists[1:]:
             input_money_count+=1
-        input_money_to_portfolio[test_date] = input_money *input_money_count +test_start_rebalance_input_money
+        input_money_to_portfolio[test_date] = input_money *input_money_count +start_rebalance_input_money
     
     
     
@@ -209,8 +204,8 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             
             # 세제혜택을 고려하고, 날짜가 세제환급받을 날짜들 중 하나이면
             if (test_date in tax_benfit_date_list) and tax ==1:
-                # print('**********************************')
-                # print('세제혜택 받을 금액 :', tax_benefit_money)
+                print('**********************************')
+                print('세제혜택 받을 금액 :', tax_benefit_money)
                 if tax_benefit_money >= 7000000: # 세제혜택 받을 금액이 700만원 이상이면(irp 기준)
                     tax_benefit_money = 7000000 * 0.165 # 700만원의 16.5% 금액을 환급
                 else:# 세제혜택 받을 금액이 700만원 이하이면
@@ -218,6 +213,7 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
                 # print('세제환급 받을 금액 :', tax_benefit_money)
                 balance_amount += tax_benefit_money
                 tax_benefit_money =0 # 세제혜택 받을 금액으로 0원으로 초기화
+                print()
                 
             # 조회날짜가 리밸런싱날짜에 있으면
             if test_date in test_start_rebalance_dates:
@@ -230,32 +226,32 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
                     tax_benefit_money += input_money # 세제혜택을 받을 금액에 납입금액을 더함
                     
                 rebalance_date=test_date # '최근 리밸런싱한 날짜'를 갱신
-                # print("==================================")
-                # print(rebalance_date, "리밸런싱")
-                # print("==================================")
+                print("==================================")
+                print(rebalance_date, "리밸런싱")
+                print("==================================")
                 # 리밸런싱 할 때 구매할 금융상품들 가격 구함
                 portfolio_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, rebalance_date)
-                # print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_product_price)
+                print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_product_price)
                 
-                # print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
+                print('리밸런싱할 금액',test_start_rebalance_input_money+balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
                 
                 rebalance_balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_product_price,test_start_rebalance_input_money+balance_amount,strategy_ratio,test_date)
-                # print('리밸런싱 후 금융상품들 개수 :', portfolio_product_count)
-                # print("리밸런싱 후 잔액 :", rebalance_balance_account)
+                print('리밸런싱 후 금융상품들 개수 :', portfolio_product_count)
+                print("리밸런싱 후 잔액 :", rebalance_balance_account)
                 
                 portfolio_rebalance_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
-                # print('리밸런싱 후 금융상품들 가치 :',portfolio_rebalance_product_value)
+                print('리밸런싱 후 금융상품들 가치 :',portfolio_rebalance_product_value)
                 
                 portfolio_rebalance_strategy_value=getPortfolioStrategyValue(portfolio_rebalance_product_value)
-                # print('리밸런싱 후 전략별 가치 :',portfolio_rebalance_strategy_value)
+                print('리밸런싱 후 전략별 가치 :',portfolio_rebalance_strategy_value)
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_rebalance_strategy_value)
                 total_portfolio_account[rebalance_date]=portfolio_rebalance_value[rebalance_date]
-                # print('리밸런싱 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
+                print('리밸런싱 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
                 
                 total_balance_account[rebalance_date] = rebalance_balance_account[rebalance_date]
-                # print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
-                # print()
+                print('리밸런싱 후 포트폴리오 잔액기록 :', total_balance_account)
+                print()
                 
                 # 리밸런싱 할 때 마다 잔액 총합을 초기화 ->  리밸런싱하면 잔액총합이 0이됨
                 balance_amount=0
@@ -264,72 +260,72 @@ def backTesting(portfolio_id, strategy_ratio, portfolio_start_time,
             
             # 날씨가 납입날짜에 있으면
             elif test_date in test_input_date_lists:
-                # print("==================================")
-                # print(test_date, "납입날짜")
-                # print("==================================")
+                print("==================================")
+                print(test_date, "납입날짜")
+                print("==================================")
                 portfolio_product_price=getPortfolioProductPrice(portfolio_product_price, test_date)
-                # print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
-                # print('주기적 납부하는 돈 :', input_money)
+                print('납부때마다 구매할 금융상품들 가격',portfolio_product_price)
+                print('주기적 납부하는 돈 :', input_money)
                 
                 tax_benefit_money += input_money # 세졔혜택 받을 금액에 추가
                 
                 input_balance_account,new_portfolio_product_count=getPortfolioProductInfo(portfolio_product_price,input_money,strategy_ratio, test_date)
-                # print('납부때마다 추가되는 금융상품 개수 :',new_portfolio_product_count)
-                # print('납부때마다 추가되는 잔액 :',input_balance_account)
+                print('납부때마다 추가되는 금융상품 개수 :',new_portfolio_product_count)
+                print('납부때마다 추가되는 잔액 :',input_balance_account)
                 
                 portfolio_product_count = getPortfolioProductAccumulateCount(portfolio_product_count,new_portfolio_product_count)
-                # print('누적 금융상품 개수 :',portfolio_product_count)
+                print('누적 금융상품 개수 :',portfolio_product_count)
                 
                 portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
-                # print('누적 금융상품들 가치 :',portfolio_product_value)
+                print('누적 금융상품들 가치 :',portfolio_product_value)
                 
                 portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
-                # print('누적 전략별 가치 :',portfolio_strategy_value)
+                print('누적 전략별 가치 :',portfolio_strategy_value)
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
                 total_portfolio_account[test_date]=portfolio_rebalance_value[test_date]
-                # print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
+                print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account)
                 
                 # 포트폴리오 가치 총합을 갱신
                 last_date = list(total_portfolio_account.keys())[-1]
                 test_start_rebalance_input_money=total_portfolio_account[last_date]
                 
                 total_balance_account=getBalaceAccumulate(input_balance_account,total_balance_account)
-                # print('누적 후 잔액기록 :',total_balance_account)
+                print('누적 후 잔액기록 :',total_balance_account)
                 
                 balance_amount=total_balance_account[list(total_balance_account.keys())[-1]]
-                # print('납입한 후 리밸런싱 전까지 잔액 총합 :',balance_amount)
-                # print()
+                print('납입한 후 리밸런싱 전까지 잔액 총합 :',balance_amount)
+                print()
                 
             else:
-                # print("==================================")
-                # print(test_date, "나머지경우")
-                # print("==================================")
+                print("==================================")
+                print(test_date, "나머지경우")
+                print("==================================")
                 portfolio_product_price=getPortfolioProductPrice(portfolio_product_price, test_date)
-                # print(test_date,'금융상품 가격 :',portfolio_product_price)
+                print(test_date,'금융상품 가격 :',portfolio_product_price)
             
                 portfolio_product_count=changeDateDictKey(portfolio_product_count,test_date)
-                # print(test_date,'금융상품 개수 :',portfolio_product_count)
+                print(test_date,'금융상품 개수 :',portfolio_product_count)
                 
                 portfolio_product_value=getPortfolioProductValue(portfolio_product_price,portfolio_product_count)
-                # print(test_date,'금융상품들 가치 :',portfolio_product_value)
+                print(test_date,'금융상품들 가치 :',portfolio_product_value)
                 
                 portfolio_strategy_value=getPortfolioStrategyValue(portfolio_product_value)
-                # print(test_date,'전략별 가치 :',portfolio_strategy_value)
+                print(test_date,'전략별 가치 :',portfolio_strategy_value)
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
                 total_portfolio_account[test_date]=portfolio_rebalance_value[test_date]
-                # print(test_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account)
+                print(test_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account)
                 
                 # 포트폴리오 가치 총합을 갱신
                 last_date = list(total_portfolio_account.keys())[-1]
                 test_start_rebalance_input_money=total_portfolio_account[last_date]
                 
                 total_balance_account[test_date] = balance_amount
-                # print('누적 후 잔액기록 :',total_balance_account)
-                # print()
+                print('누적 후 잔액기록 :',total_balance_account)
+                print()
         
-        # print()
+        print()
         if tax == 0: # 세제혜택 X 인 경우 결과값들 입력
             real_portfolio_account=getRealPortfolioValue(total_portfolio_account,total_balance_account) # 포트폴리오 가치 추이
             portfolio_result = get_portVariables(real_portfolio_account,input_money_to_portfolio) # 포트폴리오 출력결과 변수
@@ -692,19 +688,25 @@ def getBalaceAccumulate(input_balance_account,total_balance_account):
 # 포트폴리오 생성하기 위해서 내용을 입력받는 함수
 def makePortfolio():
     portfolio_name = input("포트폴리오명은? : ")
-    strategy_count = int(input("포트폴리오의 구성 전략 개수는? : "))
+    start_money = int(input("포트폴리오 시작금액은?(주기적 납입 금액 외의 시드 머니) : "))
+    strategy_ratio = list(map(int,input("포트폴리오의 구성 전략 비율들는?(ex - 10 20 70 등으로 합쳐서 100이되게) : ").split()))
     start_time = input("백테스트 시작날짜(ex 20220101) : ")
     end_time = input("백테스트 끝날짜(ex 20220101) : ")
     rebalance_cycle = int(input("리밸런싱 주기(달 기준) : "))
     input_type = input("주기적으로 납입하는 방식 선택 : ")
     input_money = int(input("주기적으로 납입하는 금액 입력 : "))
-    return portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money
-   
-# 전략을 생성하기 위해서 내용을 입력받는 함수
-def makeStrategy(i):
-    strategy_kind = input(str(i+1)+"번째 전략 종류를 입력하세요(ex PER 저, PBR 저) : ")
-    product_count = int(input("전략의 구성 금융상품 개수를 입력하세요 : "))
-    return strategy_kind, product_count
+    return portfolio_name,start_money, strategy_ratio, start_time, end_time, rebalance_cycle, input_type, input_money
+
+def makeStrategy(strategy_count):
+    stratgy_input_info_list = list() # 반환 할 리스트 생성
+    for i in range(strategy_count): # 전략의 개수 만큼 입력을 받음
+        temp_list = list()
+        temp_list.append(input(str(i+1)+'번째 전략종류는? : '))
+        temp_list.append(int(input(str(i+1)+'번째 전략으로 구매할 금융상품의 개수는? : ')))
+        temp_list.append(int(input(str(i+1)+'번째 전략의 시작 수치는?(없으면 0) : ')))
+        temp_list.append(int(input(str(i+1)+'번째 전략의 마지막 수치는?(없으면 0) : ')))
+        stratgy_input_info_list.append(temp_list)
+    return stratgy_input_info_list
    
 # 잔액포함 포트폴리오 가치 반환하는 함수
 def getRealPortfolioValue(total_portfolio_account,total_balance_account):
@@ -720,15 +722,16 @@ def getRealPortfolioValue(total_portfolio_account,total_balance_account):
 # 실행하는 부분이 메인함수이면 실행 
 if __name__ == "__main__":
     # 'makePortfoili() 함수' 를 이용해서 '포트폴리오 입력 변수'들을 생성
-    portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money=makePortfolio()
+    portfolio_name, start_money, strategy_ratio, start_time, end_time, rebalance_cycle, input_type, input_money=makePortfolio()
     # '포트폴리오 입력 변수'와 'Portfolio() 클래스'를 이용해서 '포트폴리오 객체' 생성
-    portfolio_1=Portfolio(portfolio_name, strategy_count, start_time, end_time, rebalance_cycle, input_type, input_money) # 포트폴리오면, 구성전략개수, 시작날짜, 끝날짜, 리밸런싱주기(달), 납입방법, 주기적납부금액
+    portfolio_1=Portfolio(portfolio_name, start_money, strategy_ratio, start_time, end_time, rebalance_cycle, input_type, input_money) # 포트폴리오면, 구성전략개수, 시작날짜, 끝날짜, 리밸런싱주기(달), 납입방법, 주기적납부금액
     
     
     strategy_list = list() # '포트폴리오'를 구성하는 '전략'들을 담을 '전략 리스트' 생성, '전략리스트' == '포트폴리오' 라고 생각해도 무관
-    for i in range(strategy_count): # '포트폴리오'를 구성하는 '전략의 개수'만큼 반복
-        strategy_kind, product_count = makeStrategy(i) # 'makeStrategy() 함수'를 이용해서 '전략종류(PER 저 등)'와 '전략으로 선택할 금융상품 개수'를 입력받음
-        strategy_list.append(Strategy(strategy_kind, product_count)) # 'Strategy() 클래스'를 이용해서 생성한 '전략'들을 '전략 리스트'에 추가
+    stratgy_input_info_list = makeStrategy(len(strategy_ratio)) # 전략생성을 위해서 기입할 정보드을 담을 리스트 ex) [['전략명1','전략으로담을금융상품개수1','수치입력일 경우 시작값', '수치입력을 경우 마지막값']]
+                                                                # 백엔드 구현 시 함수 입력이 아닌 직접구현으로 교체
+    for stratgy_input_info in stratgy_input_info_list: # '포트폴리오'를 구성하는 '전략의 개수'만큼 반복
+        strategy_list.append(Strategy(*stratgy_input_info)) # 'Strategy() 클래스'를 이용해서 생성한 '전략'들을 '전략 리스트'에 추가
     
     # 접속하기 - 해당 데이터 베이스에 접속
     db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
@@ -737,6 +740,7 @@ if __name__ == "__main__":
     # 백테스트 함수 사용하기 위해서 리스트들 생성
     stratgy_kind_list = list() # '전략종류들을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류'들이 담김
     stratgy_sql_query_list = list() # '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들이 담김
+    
     for strategy_object in strategy_list: # '전략리스트' 에 있는 모든 '전략'들에 대해서 반복
         stratgy_kind_list.append(strategy_object.getProductListQuery()[0]) # '전략'의 '전략종류'을 '전략종류들을 담을 리스트'에 추가
         stratgy_sql_query_list.append(strategy_object.getProductListQuery()[1]) # '전략'의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'을 해당 리스트에 추가
