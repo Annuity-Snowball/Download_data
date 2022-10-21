@@ -175,7 +175,7 @@ def backTesting(portfolio_id, start_rebalance_input_money, strategy_ratio, portf
     
         tax_benefit_money = start_rebalance_input_money # 세제혜택을 받을 금액을 초기 금액으로 설정
 
-        rebalanced_money = start_rebalance_input_money
+        rebalanced_money_without_balance = start_rebalance_input_money
 
         total_balance_account= dict() # 날짜 별로 남은 잔액들 히스토리
         
@@ -210,7 +210,7 @@ def backTesting(portfolio_id, start_rebalance_input_money, strategy_ratio, portf
                 # '조회날짜'가 '납입날짜 리스트'에 있고, '조회날짜'가 '리밸런싱 날짜리스트'의 첫번째 날짜가 아니면(리밸런싱하는 첫번째 날이면 납입금액을 더하지 않아야 하므로)
                 if backtesting_date in input_date_list and backtesting_date != rebalance_date_list[0]:
                     # '초기금액'에 '납입금액'을 더한다 -> '리밸런싱할 금액'을 구한다!
-                    rebalanced_money+=input_money
+                    rebalanced_money_without_balance+=input_money
                     tax_benefit_money += input_money # 세제혜택을 받을 금액에 납입금액을 더함
                     
                 recent_rebalance_date = backtesting_date # '최근 리밸런싱한 날짜'를 갱신
@@ -221,9 +221,9 @@ def backTesting(portfolio_id, start_rebalance_input_money, strategy_ratio, portf
                 portfolio_product_price = getPortfolioRebalanceProductPrice(stratgy_sql_query_list, strategy_kinds, recent_rebalance_date)
                 print('리밸런싱 할 때 구매할 금융상품들 가격 :',portfolio_product_price)
                 
-                print('리밸런싱할 금액',rebalanced_money+current_balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
+                print('리밸런싱할 금액',rebalanced_money_without_balance+current_balance_amount) # 리밸런싱할 금액은 '포트폴리오가치(잔액X)'+'잔액' 이다
                 
-                rebalance_balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_product_price,rebalanced_money+current_balance_amount,strategy_ratio,recent_rebalance_date)
+                rebalance_balance_account,portfolio_product_count = getPortfolioRabalanceInfo(portfolio_product_price,rebalanced_money_without_balance+current_balance_amount,strategy_ratio,recent_rebalance_date)
                 print('리밸런싱 후 금융상품들 개수 :', portfolio_product_count)
                 print("리밸런싱 후 잔액 :", rebalance_balance_account)
                 
@@ -270,16 +270,16 @@ def backTesting(portfolio_id, start_rebalance_input_money, strategy_ratio, portf
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
                 total_portfolio_account_without_balance[backtesting_date]=portfolio_rebalance_value[backtesting_date]
-                print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account_without_balance)
+                # print('납입한 후 포트폴리오 가치(잔액포함X) :',total_portfolio_account_without_balance)
                 
                 # 포트폴리오 가치 총합을 갱신
                 last_date = list(total_portfolio_account_without_balance.keys())[-1]
-                rebalanced_money=total_portfolio_account_without_balance[last_date]
+                rebalanced_money_without_balance = total_portfolio_account_without_balance[last_date]  # 잔액 제외 하고 리밸런싱할 금액을 갱신
                 
-                total_balance_account=getBalaceAccumulate(input_balance_account,total_balance_account)
-                print('누적 후 잔액기록 :',total_balance_account)
+                total_balance_account = getBalaceAccumulate(input_balance_account,total_balance_account) # 잔액 기록 갱신
+                # print('누적 후 잔액기록 :',total_balance_account)
                 
-                current_balance_amount=total_balance_account[list(total_balance_account.keys())[-1]]
+                current_balance_amount=total_balance_account[list(total_balance_account.keys())[-1]] # 현재 잔액현황 갱신
                 print('납입한 후 리밸런싱 전까지 잔액 총합 :',current_balance_amount)
                 print()
                 
@@ -301,14 +301,14 @@ def backTesting(portfolio_id, start_rebalance_input_money, strategy_ratio, portf
                 
                 portfolio_rebalance_value=getPortfolioValue(portfolio_strategy_value)
                 total_portfolio_account_without_balance[backtesting_date]=portfolio_rebalance_value[backtesting_date]
-                print(backtesting_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account_without_balance)
+                # print(backtesting_date,'포트폴리오 가치(잔액포함X) :',total_portfolio_account_without_balance)
                 
                 # 포트폴리오 가치 총합을 갱신
                 last_date = list(total_portfolio_account_without_balance.keys())[-1]
-                rebalanced_money=total_portfolio_account_without_balance[last_date]
+                rebalanced_money_without_balance=total_portfolio_account_without_balance[last_date] # 잔액 제외 하고 리밸런싱할 금액을 갱신
                 
-                total_balance_account[backtesting_date] = current_balance_amount
-                print('누적 후 잔액기록 :',total_balance_account)
+                total_balance_account[backtesting_date] = current_balance_amount # 잔액기록에 현재잔액을 추가
+                # print('누적 후 잔액기록 :',total_balance_account)
                 print()
         
         print()
@@ -676,8 +676,8 @@ def makePortfolio():
     portfolio_name = input("포트폴리오명은? : ")
     start_money = int(input("포트폴리오 시작금액은?(주기적 납입 금액 외의 시드 머니) : "))
     strategy_ratio = list(map(int,input("포트폴리오의 구성 전략 비율들는?(ex - 10 20 70 등으로 합쳐서 100이되게) : ").split()))
-    start_time = input("백테스트 시작날짜(ex 20220101) : ")
-    end_time = input("백테스트 끝날짜(ex 20220101) : ")
+    start_time = input("백테스트 시작날짜(ex 2022-01-01) : ")
+    end_time = input("백테스트 끝날짜(ex 2022-01-01) : ")
     rebalance_cycle = int(input("리밸런싱 주기(달 기준) : "))
     input_type = input("주기적으로 납입하는 방식 선택 : ")
     input_money = int(input("주기적으로 납입하는 금액 입력 : "))
