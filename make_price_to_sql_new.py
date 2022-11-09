@@ -198,7 +198,7 @@ for product in product_lists:
         );
 """)
 
-product_evaluate 테이블 생성
+# product_evaluate 테이블 생성
 sql_list.append("""
         CREATE TABLE product_evaluate(
         id int Auto_Increment Primary Key, 
