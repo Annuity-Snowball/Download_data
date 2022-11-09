@@ -1,10 +1,14 @@
 from datetime import date, timedelta
 import pymysql
 import copy
+import datetime as dt
+from pandas.tseries.offsets import *
+from pandas_datareader import data as pdr
+import pandas as pd
 
 from Download_data.getDatainfo import getDailyDateInfo, getPayInDateInfo, getRebalanceDateInfo, getYearlyDateInfo
 
-from portpolioVariables import get_portVariables, get_returns,get_winRate, get_mdd, receipt_simul,cal_receiptValue 
+
 
 # 포트폴리오 클래스 생성
 class Portfolio():
@@ -14,7 +18,7 @@ class Portfolio():
     """
     
     # 객체 생성할 때 초기화하는 매소드 입니다
-    def __init__(self, portfolio_name, start_money, strategy_ratio, start_time, end_time, rebalance_cycle, input_type, input_money):
+    def __init__(self,portfolio_id, portfolio_name, start_money, strategy_ratio, start_time, end_time, rebalance_cycle, input_type, input_money):
         """
         포트폴리오 아이디를 데이터베이스에서 받는 부분은 구현 필요 합니다
         오류를 출력하는 부분(print(error))들은 예외 처리로 수정 필요합니다.
@@ -31,7 +35,7 @@ class Portfolio():
         """
         
         # 포트폴리오아이디 생성
-        self.portfolio_id='123456' # 추후 수정 필요
+        self.portfolio_id=portfolio_id # 추후 수정 필요
         
         
         # 포트폴리오 시작금액 입력받음
@@ -57,8 +61,160 @@ class Portfolio():
         # 주기적납입금액 입력받음
         self.input_money = input_money
         
+        self.portfolio_account_without_tax_benefit = None
+        self.portfolio_receive_without_tax_benefit = None
+        
+        self.portfolio_account_with_tax_benefit = None
+        self.portfolio_receive_with_tax_benefit = None
         # 데이터베이스에 업데이트하는 부분 - sql 쿼리문
         pass # 추후 수정 필요
+    
+    def get_returns(self,df):
+        df['return'] = (df['value'] - df['seed']) / df['seed']  # +df['cash'] #일별수익률 계산해서 열 추가 (월간수익률(납입일 기준),추가 가능)
+        df['return'] = ((df['return'].round(4))*100).round(2)
+    
+    def monthlyReturn(self,dict_realvalue):
+        # 입력: 포트폴리오 가치
+        realValue = dict()
+        rtDict = dict()
+        realValue = dict_realvalue
+        mfValue = realValue[next(iter(realValue))]  # 월 초 가치, 초기값: 시작 날 가치
+        mlValue = realValue[next(iter(realValue))]  # 월 말 가치
+        month = next(iter(realValue))
+        firstmonth = month.split('-')[1]
+        ymonth = month.split('-')[0] + '-' + month.split('-')[1]
+        monthCount = 1
+
+        keyList = []
+        for key in realValue.keys():
+            keyList.append(key)
+
+        for i in range(len(keyList)):
+            splitkey = keyList[i].split('-')
+            mlValue = realValue[keyList[i - 1]]  # 월 말 value 보존
+            if (splitkey[1] != firstmonth):  # 월 변경될 경우
+                rtDict[ymonth] = round((mlValue - mfValue) / mfValue * 100, 2)  # 월 수익률 계산
+                mfValue = realValue[keyList[i]]  # 월 초 값 갱신
+                ymonth = splitkey[0] + "-" + splitkey[1]  # 연-월 갱신 (딕셔너리 생성에 사용)
+                firstmonth = splitkey[1]  # 월 갱신 (월 비교에 사용)
+                monthCount = monthCount + 1  # 운용 개월 수 체크
+
+            rtDict[ymonth] = round((realValue[key] - mfValue) / mfValue * 100, 2)  # realValue[key]: 마지막 날 수익률 마지막 달 수익률 계산
+
+        sum_MonthlyReturn = 0
+        for key in rtDict.keys():
+            sum_MonthlyReturn = sum_MonthlyReturn + rtDict[key]
+
+        rtDict['월 수익률 평균'] = round(sum_MonthlyReturn / monthCount, 2)
+
+        return (rtDict)
+    
+    def get_winRate(self,df):
+        # 리밸런싱 날짜 리스트받아서, 해당하는 날짜들의 승률 계산해서 반환
+        win_count = 0
+
+        for i in df.index:
+            if df.loc[i, 'return'] >= 0:
+                win_count = win_count + 1
+
+        return round((win_count) / (len(df.index)) * 100, 2)
+
+    
+    def get_portVariables(self,dict_realvalue, dict_inputmoney):
+        portfolio_result = dict()
+        values = dict()
+        for key in dict_inputmoney.keys():
+            values[key] = list()
+            values[key].append(float(dict_inputmoney[key]))
+            values[key].append(dict_realvalue[key])
+
+        df = pd.DataFrame.from_dict(values, orient='index', columns=['seed', 'value'])  # 넘겨받은 사전 데이터 데이터프레임으로 변환
+
+        self.get_returns(df)  # 수익률 계산
+        win_rate = self.get_winRate(df)  # 승률 계산해서 저장 (리밸런싱 날짜 기준)
+        # print(df)
+        # print("승률: ", win_rate, "%")
+        # print(mdd)
+        # print(df['return'].to_dict())
+        portfolio_result['투입한 금액'] = dict_inputmoney[list(dict_inputmoney.keys())[-1]]
+        portfolio_result['포트폴리오 가치'] = df.iloc[-1, 1]  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
+        
+        portfolio_result['총 수익률'] = df.iloc[-1, 2]
+        portfolio_result['월 수익률 추이'] = self.monthlyReturn(dict_realvalue)
+        portfolio_result['일별 수익률'] = dict(zip(df.index, df['return']))
+        portfolio_result['승률'] = win_rate
+
+        return portfolio_result
+        
+    def cal_receiptValue(self,year, value):
+        if year == 10:
+            return value
+        return value / (11 - year) * 1.2
+    
+    
+    def receipt_simul(self,portfolioResult, receiptYear):
+        # 수령 시뮬레이션
+        # 연간 수령한도: 계좌평가액 / (11 - 연금수령연차) * 1.2 -> 1년간 자유롭게 나누어 수령 가능 (수령하지 않는 것도 가능) - 매년 1월 1일 기준으로 평가
+        # 연 1,200만원 이상 수령 시, 종합소득세 부과 (16.5%)
+        # 수령 가능금액 확인
+        # 0: 수령 시 운용 중지
+        # 1: 수령 시 운용 유지
+        # (수령 후 다음 해 잔액) = (잔액 x 포트폴리오 기간 내 평균수익률)
+
+        cum_value = int(portfolioResult['포트폴리오 가치'])  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
+        # print("수령 직전가치: ", cum_value)
+        # print("평균수익률: ", mean_return)
+
+        rtDict1 = dict()
+        rtDict1['총 수령액'] = 0
+        can_receiptValue = 0
+
+        for i in range(1, receiptYear + 1):
+            can_receiptValue = int(cum_value / (receiptYear - (i - 1)))  # 남은 금액을 남은 연차로 엔빵
+            if i <= 10:  # 1~10년차의 경우
+                if can_receiptValue > self.cal_receiptValue(i, cum_value):
+                    can_receiptValue = int(self.cal_receiptValue(i, cum_value))  # 10년이내의 최대를 넘을 시 최대금액으로 제한
+            if can_receiptValue > 12000000:  # 세액공제 한도 초과 시
+                can_receiptValue = 12000000  # 한도 범위인 1200만원으로 제한
+            cum_value = int(cum_value - can_receiptValue)  # 잔액 정리
+            rtDict1[str(i) + '년차 수령금액'] = can_receiptValue
+            rtDict1['총 수령액'] = rtDict1['총 수령액'] + can_receiptValue
+
+        rtDict1['잔액'] = cum_value
+
+        cum_value2 = int(portfolioResult['포트폴리오 가치'])  # 포트폴리오 가치 저장, 초기값: 수령 직전 가치
+        rtDict2 = dict()
+        rtDict2['총 수령액'] = 0
+        can_receiptValue2 = 0
+        year = 1
+
+        while cum_value2 > 0:
+            if year <= 10:
+                can_receiptValue2 = int(self.cal_receiptValue(year, cum_value2))  # 당 해 수령가능 금액
+            else:
+                can_receiptValue2 = int(cum_value2)
+
+            if can_receiptValue2 > 12000000:
+                can_receiptValue2 = 12000000
+
+            rtDict2[str(year) + '년차 수령금액'] = can_receiptValue2
+            rtDict2['총 수령액'] = rtDict2['총 수령액'] + can_receiptValue2
+            cum_value2 = int(cum_value2 - can_receiptValue2)
+            year = year + 1
+
+        rtDict2['잔액'] = cum_value2
+
+        # print("수령방식: ", receiptWay)
+        # print()
+        # print("포트폴리오 누적 가치: ", cum_value)
+        # print()
+        # print("수익률 평균: ", mean_return)
+
+        if rtDict1['잔액'] > 0:
+            print("첫 번째 방식의 경우 잔액이 0보다 큽니다, 수령 기간을 늘리시길 권장드립니다.")
+        rtList = [rtDict1, rtDict2]
+        return rtList
+    
     
     def get_portfolio_without_tax_benefit(self):
         pass
@@ -125,22 +281,10 @@ class Strategy():
         return self.strategy_kind, self.sql_query
 
 
-# 임시로 전략 입력받기 위해서 생성, 추후에 삭제할 함수
-def makeStrategy(strategy_count):
-    stratgy_input_info_list = list() # 반환 할 리스트 생성
-    for i in range(strategy_count): # 전략의 개수 만큼 입력을 받음
-        temp_list = list()
-        temp_list.append(input(str(i+1)+'번째 전략종류는? : '))
-        temp_list.append(int(input(str(i+1)+'번째 전략으로 구매할 금융상품의 개수는? : ')))
-        temp_list.append(int(input(str(i+1)+'번째 전략의 시작 수치는?(없으면 0) : ')))
-        temp_list.append(int(input(str(i+1)+'번째 전략의 마지막 수치는?(없으면 0) : ')))
-        stratgy_input_info_list.append(temp_list)
-    print('나중에 이렇게 입력하는 걸로 대입 해야 합니다 :', stratgy_input_info_list) # [['PER 저', 2, 0, 0], ['PER 고', 3, 0, 0]]
-    return stratgy_input_info_list
 
 class backtest():
     def __init__(self,portfolio_id, portfolio_name, portfolio_start_money, strategy_ratio, portfolio_start_time, 
-                portfolio_end_time, rebalance_cycle, input_type, input_money):
+                portfolio_end_time, rebalance_cycle, input_type, input_money,stratgy_input_info_list):
         
         self.portfolio_id = portfolio_id
         self.portfolio_name = portfolio_name
@@ -152,51 +296,19 @@ class backtest():
         self.input_type = input_type
         self.input_money = input_money
         self.strategy_list = list()
-        
-        self.portfolio_object = Portfolio(self.portfolio_name, self.portfolio_start_money, self.strategy_ratio, self.portfolio_start_time, self.portfolio_end_time, self.rebalance_cycle, self.input_type, self.input_money)
-        
-        self.stratgy_input_info_list = makeStrategy(len(strategy_ratio)) # 전략생성을 위해서 기입할 정보드을 담을 리스트 ex) [['전략명1','전략으로담을금융상품개수1','수치입력일 경우 시작값', '수치입력을 경우 마지막값']]
+        self.stratgy_input_info_list = stratgy_input_info_list # 전략생성을 위해서 기입할 정보드을 담을 리스트 ex) [['전략명1','전략으로담을금융상품개수1','수치입력일 경우 시작값', '수치입력을 경우 마지막값']]
                                                                 # 백엔드 구현 시 함수 입력이 아닌 직접구현으로 교체
                                                                 # 추후 이런식으로 직접 대입 [['PER 저', 2, 0, 0], ['PER 고', 3, 0, 0]]
+        
+        self.portfolio_object = Portfolio( self.portfolio_id,self.portfolio_name, self.portfolio_start_money, self.strategy_ratio, self.portfolio_start_time, self.portfolio_end_time, self.rebalance_cycle, self.input_type, self.input_money)
+        
+
                                                                 
     
         for stratgy_input_info in self.stratgy_input_info_list: # '포트폴리오'를 구성하는 '전략의 개수'만큼 반복
             self.strategy_list.append(Strategy(*stratgy_input_info)) # 'Strategy() 클래스'를 이용해서 생성한 '전략'들을 '전략 리스트'에 추가
     
 
-
-        # 백테스트 함수 사용하기 위해서 리스트들 생성
-        self.stratgy_kind_list = list() # '전략종류들을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류'들이 담김
-        self.stratgy_sql_query_list = list() # '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들이 담김
-        
-        for strategy_object in self.strategy_list: # '전략리스트' 에 있는 모든 '전략'들에 대해서 반복
-            self.stratgy_kind_list.append(strategy_object.getProductListQuery()[0]) # '전략'의 '전략종류명'들을 '전략종류들을 담을 리스트'에 추가 # ex ['PER 저', 'PER 고']
-            self.stratgy_sql_query_list.append(strategy_object.getProductListQuery()[1]) # '전략'의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들을 해당 리스트에 추가  ex) ['select product_date,product_ticker from product_evaluate order by per asc limit 2', 'select product_date,product_ticker from product_evaluate order by per desc limit 3']
-            
-            
-        # 시작날짜와 끝날짜 사이에 존채하는 모든 날짜들을 담은 리스트
-        self.backtesting_date_list = getDailyDateInfo(self.portfolio_start_time, self.portfolio_end_time)
-        
-        # 리벨러스를 하는 날짜들 리스트(테스트용)
-        self.rebalance_date_list = getRebalanceDateInfo(self.portfolio_start_time, self.portfolio_end_time, self.input_type, self.rebalance_cycle) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
-
-        # 납입하는 날짜들을 담은 리스트(테스트용)
-        self.input_date_list = getPayInDateInfo(self.portfolio_start_time, self.portfolio_end_time, self.input_type) # 납입한 날짜는 첫번째 날짜는 포함X
-        
-        # 세제혜택을 받는 날짜들을 남은 리스트
-        self.tax_benfit_date_list = getYearlyDateInfo(self.portfolio_start_time, self.portfolio_end_time)
-        
-        # self.rebalance_date_list=['2017-10-10','2018-01-02','2018-04-02']
-        # self.input_date_list=['2017-11-01','2017-12-01','2018-01-02','2018-02-01','2018-03-02','2018-04-02']
-        
-        # 납입하는 금액 히스토리 - 나중에 do_backtest 안에 구현을 하고 이 부분은 제거 해야 할듯!
-        input_money_count = 0 # 납입한 횟수(달별로 납입)
-        self.input_money_to_portfolio=dict()
-        for backtesting_date in self.backtesting_date_list:
-            if backtesting_date in self.input_date_list[1:]:
-                input_money_count+=1
-            self.input_money_to_portfolio[backtesting_date] = self.input_money *input_money_count + self.portfolio_start_money
-            
             
             
     # 날짜지정이 안되어 있는 쿼리문에서 날짜를 지정하는 부분을 추가해서 반환하는 함수 - 리밸런싱 날짜들을 받자!
@@ -434,6 +546,39 @@ class backtest():
         return(portfolio_product_count_account)
           
     def do_backtest(self):
+        
+                # 백테스트 함수 사용하기 위해서 리스트들 생성
+        self.stratgy_kind_list = list() # '전략종류들을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류'들이 담김
+        self.stratgy_sql_query_list = list() # '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문을 담을 리스트' 생성 - '포트폴리오'를 구성하는 모든 '전략'들의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들이 담김
+        
+        for strategy_object in self.strategy_list: # '전략리스트' 에 있는 모든 '전략'들에 대해서 반복
+            self.stratgy_kind_list.append(strategy_object.getProductListQuery()[0]) # '전략'의 '전략종류명'들을 '전략종류들을 담을 리스트'에 추가 # ex ['PER 저', 'PER 고']
+            self.stratgy_sql_query_list.append(strategy_object.getProductListQuery()[1]) # '전략'의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들을 해당 리스트에 추가  ex) ['select product_date,product_ticker from product_evaluate order by per asc limit 2', 'select product_date,product_ticker from product_evaluate order by per desc limit 3']
+            
+            
+        # 시작날짜와 끝날짜 사이에 존채하는 모든 날짜들을 담은 리스트
+        self.backtesting_date_list = getDailyDateInfo(self.portfolio_start_time, self.portfolio_end_time)
+        
+        # 리벨러스를 하는 날짜들 리스트(테스트용)
+        self.rebalance_date_list = getRebalanceDateInfo(self.portfolio_start_time, self.portfolio_end_time, self.input_type, self.rebalance_cycle) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
+
+        # 납입하는 날짜들을 담은 리스트(테스트용)
+        self.input_date_list = getPayInDateInfo(self.portfolio_start_time, self.portfolio_end_time, self.input_type) # 납입한 날짜는 첫번째 날짜는 포함X
+        
+        # 세제혜택을 받는 날짜들을 남은 리스트
+        self.tax_benfit_date_list = getYearlyDateInfo(self.portfolio_start_time, self.portfolio_end_time)
+        
+        # self.rebalance_date_list=['2017-10-10','2018-01-02','2018-04-02']
+        # self.input_date_list=['2017-11-01','2017-12-01','2018-01-02','2018-02-01','2018-03-02','2018-04-02']
+        
+        # 납입하는 금액 히스토리 - 나중에 do_backtest 안에 구현을 하고 이 부분은 제거 해야 할듯!
+        input_money_count = 0 # 납입한 횟수(달별로 납입)
+        self.input_money_to_portfolio=dict()
+        for backtesting_date in self.backtesting_date_list:
+            if backtesting_date in self.input_date_list[1:]:
+                input_money_count+=1
+            self.input_money_to_portfolio[backtesting_date] = self.input_money *input_money_count + self.portfolio_start_money
+            
 
         # tax가 0이면 세제혜택 X, tax가 1이면 세제혜택 O
         for tax in range(2):
@@ -579,13 +724,13 @@ class backtest():
             print()
             if tax == 0: # 세제혜택 X 인 경우 결과값들 입력
                 real_portfolio_account=self.getRealPortfolioValue(total_portfolio_without_balance_account,self.portfolio_balance_account) # 포트폴리오 가치 추이
-                portfolio_result = get_portVariables(real_portfolio_account, self.input_money_to_portfolio) # 포트폴리오 출력결과 변수
-                portfolio_receipt = receipt_simul(portfolio_result,10) # 포트폴리오 수령방법, 몇년 수령할지 입력(10년 디폴트이고 나중에 사용자 맞게 수정 가능)
+                self.portfolio_object.portfolio_account_without_tax_benefit = self.portfolio_object.get_portVariables(real_portfolio_account, self.input_money_to_portfolio) # 포트폴리오 출력결과 변수
+                self.portfolio_object.portfolio_receive_without_tax_benefit = self.portfolio_object.receipt_simul(self.portfolio_object.portfolio_account_without_tax_benefit,10) # 포트폴리오 수령방법, 몇년 수령할지 입력(10년 디폴트이고 나중에 사용자 맞게 수정 가능)
 
             elif tax == 1:# 세제혜택 0 인 경우 결과값들 입력
                 real_portfolio_account_tax_benefit=self.getRealPortfolioValue(total_portfolio_without_balance_account,self.portfolio_balance_account)
-                portfolio_result_tax_benefit = get_portVariables(real_portfolio_account_tax_benefit, self.input_money_to_portfolio)
-                portfolio_receipt_tax_benefit = receipt_simul(portfolio_result_tax_benefit,10) # 몇년 수령할지 입력(10년 디폴트이고 나중에 사용자 맞게 수정 가능)
+                self.portfolio_object.portfolio_account_with_tax_benefit = self.portfolio_object.get_portVariables(real_portfolio_account_tax_benefit, self.input_money_to_portfolio)
+                self.portfolio_object.portfolio_receive_with_tax_benefit = self.portfolio_object.receipt_simul(self.portfolio_object.portfolio_account_with_tax_benefit,10) # 몇년 수령할지 입력(10년 디폴트이고 나중에 사용자 맞게 수정 가능)
         
 
         print("*************** 세제혜택X ***************")
@@ -594,9 +739,9 @@ class backtest():
         print()
         print('포트폴리오 납입금액 추이:', self.input_money_to_portfolio)
         print()
-        print('포트폴리오 결과 :',portfolio_result)
+        print('포트폴리오 결과 :',self.portfolio_object.portfolio_account_without_tax_benefit)
         print()
-        print('포트폴리오 수령방법 :',portfolio_receipt)
+        print('포트폴리오 수령방법 :',self.portfolio_object.portfolio_receive_without_tax_benefit)
         
         print()
         print("*************** 세제혜택0 ***************")
@@ -605,9 +750,9 @@ class backtest():
         print()
         print('포트폴리오 납입금액 추이:', self.input_money_to_portfolio)
         print()
-        print('포트폴리오 결과 :', portfolio_result_tax_benefit)
+        print('포트폴리오 결과 :', self.portfolio_object.portfolio_account_with_tax_benefit)
         print()
-        print('포트폴리오 수령방법 :',portfolio_receipt_tax_benefit)
+        print('포트폴리오 수령방법 :',self.portfolio_object.portfolio_receive_with_tax_benefit)
     
     
     
@@ -620,7 +765,7 @@ if __name__ == "__main__":
     db = pymysql.connect(host='localhost', port=3306, user='root', passwd='yoy0317689*', db='snowball_database', charset='utf8') 
     snowball=db.cursor() 
 
-    backtest_object = backtest('123456', 'test', 1000000, [40,60], '2017-10-01', '2018-05-01', 3, '0', 600000)
+    backtest_object = backtest('123456', 'test', 1000000, [40,60], '2017-10-01', '2018-05-01', 3, '0', 600000, [['PER 저', 2, 0, 0], ['PER 고', 3, 0, 0]])
 
     backtest_object.do_backtest()
     db.close()  
