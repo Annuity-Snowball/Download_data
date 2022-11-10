@@ -552,7 +552,7 @@ class Backtest():
             
         # 시작날짜와 끝날짜 사이에 존채하는 모든 날짜들을 담은 리스트
         self.backtesting_date_list = getDailyDateInfo(self.portfolio_start_time, self.portfolio_end_time)
-        
+        print('백테스트 기간 날짜들 :',self.backtesting_date_list)
         # 리벨러스를 하는 날짜들 리스트(테스트용)
         self.rebalance_date_list = getRebalanceDateInfo(self.portfolio_start_time, self.portfolio_end_time, self.input_type, self.rebalance_cycle) # 리밸런싱 첫번째 날짜가 test_dates와 시작이 같아야 한다
         print('리밸런싱 날짜들 :',self.rebalance_date_list)
@@ -767,6 +767,7 @@ if __name__ == "__main__":
     snowball=db.cursor() 
 
     backtest_object = Backtest('123456', 'teststrategy', 3000000, [30,30,40], '2017-10-01', '2018-05-01', 3, '0', 700000, [['PER 저', 2, 0, 0], ['PER 고', 3, 0, 0], ['PER', 3, 10, 15]])
+
 
     backtest_object.doBacktest()
     db.close()  

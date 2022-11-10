@@ -103,7 +103,20 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
                     day = day + timedelta(days=1)
                 else:
                     break
+
             rtList.append(day.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+
+        if sd in datetimeList:  # 시작날짜가 개장일이라면
+            rtList.insert(0, sd.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+        else:  # 시작 날짜가 개장일이 아니면
+            while 1:
+               if sd not in datetimeList:  # 개장일에 포함되어 있으면
+                   sd = sd + timedelta(days=1)
+               else:
+                   break
+            rtList.insert(0, sd.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+
+
 
     if month_type == '1':
         a = list(rrule(MONTHLY,
@@ -114,14 +127,14 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
                        until=parse(end_date)))  # 지정된 기간의 매월 첫 평일 (월초)
 
         if sd in datetimeList:  # 시작날짜가 개장일이라면
-            rtList.append(start_date)  # 날짜 포함
+            rtList.insert(0, sd.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
         else:  # 시작 날짜가 개장일이 아니면
             while 1:
                if sd not in datetimeList:  # 개장일에 포함되어 있으면
                    sd = sd + timedelta(days=1)
                else:
                    break
-               rtList.append(sd.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
+            rtList.insert(0, sd.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
 
         for day in a:
             while 1:
@@ -131,10 +144,15 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
                     break
             rtList.append(day.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
 
-    return rtList  # 납입 예정일 리스트 출력
+    rt = [] #중복 제거
+    for d in rtList:
+        if d not in rt:
+            rt.append(d)
+
+    return rt  # 납입 예정일 리스트 출력
 
 
 # print(getDailyDateInfo('2022-01-01', '2022-11-07'))
 # print(getYearlyDateInfo('2020-01-01', '2022-11-07'))
 # print(getPayInDateInfo('2020-01-01', '2022-09-07', '1'))
-# print(getRebalanceDateInfo('2020-01-01', '2022-11-07', '1', 3))
+# print(getRebalanceDateInfo('2017-10-11', '2018-05-01', '1', 3))
