@@ -5,9 +5,9 @@ import datetime as dt
 from pandas.tseries.offsets import *
 from pandas_datareader import data as pdr
 import pandas as pd
-
+import plotly.graph_objects as go
 from Download_data.getDatainfo import getDailyDateInfo, getPayInDateInfo, getRebalanceDateInfo, getYearlyDateInfo
-
+from IPython.display import display
 
 
 # 포트폴리오 클래스 생성
@@ -770,4 +770,58 @@ if __name__ == "__main__":
 
 
     backtest_object.doBacktest()
+    
+    # Create traces
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=list(backtest_object.real_portfolio_account_with_tax_benefit.keys()), y=list(backtest_object.real_portfolio_without_tax_account.values()),
+                        mode='lines+markers',
+                        name='세제혜택X'))
+    fig.add_trace(go.Scatter(x=list(backtest_object.real_portfolio_account_with_tax_benefit.keys()), y=list(backtest_object.real_portfolio_account_with_tax_benefit.values()),
+                        mode='lines+markers',
+                        name='세제혜택0'))
+    fig.add_trace(go.Scatter(x=list(backtest_object.real_portfolio_account_with_tax_benefit.keys()), y=list(backtest_object.input_money_to_portfolio.values()),
+                        mode='lines+markers',
+                        name='납입금액추이'))
+    fig.update_layout(
+        {
+        "title": {
+            "text": str(backtest_object.portfolio_start_time)+' ~ '+str(backtest_object.portfolio_end_time),
+            "font": {
+                "size": 30
+            }
+        }
+    }
+    )
+    fig.show()
+    
+    df = pd.DataFrame({
+        "세제혜택X":[backtest_object.portfolio_object.portfolio_account_without_tax_benefit['투입한 금액'],
+                               backtest_object.portfolio_object.portfolio_account_without_tax_benefit['포트폴리오 가치'],
+                               backtest_object.portfolio_object.portfolio_account_without_tax_benefit['총 수익률'],
+                               backtest_object.portfolio_object.portfolio_account_without_tax_benefit['승률']
+                               ],
+        "세제혜택0":[backtest_object.portfolio_object.portfolio_account_with_tax_benefit['투입한 금액'],
+                               backtest_object.portfolio_object.portfolio_account_with_tax_benefit['포트폴리오 가치'],
+                               backtest_object.portfolio_object.portfolio_account_with_tax_benefit['총 수익률'],
+                               backtest_object.portfolio_object.portfolio_account_with_tax_benefit['승률']
+                               ]
+    },
+                      index=['총투입금액','포트폴리오 총가치','총 수익률','승률'])
+    
+    df2 = pd.DataFrame({
+        "1년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['1년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['1년차 수령금액']],
+        "2년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['2년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['2년차 수령금액']],
+        "3년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['3년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['3년차 수령금액']],
+        "4년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['4년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['4년차 수령금액']],
+        "5년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['5년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['5년차 수령금액']],
+        "6년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['6년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['6년차 수령금액']],
+        "7년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['7년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['7년차 수령금액']],
+        "8년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['8년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['8년차 수령금액']],
+        "9년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['9년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['9년차 수령금액']],
+        "10년차 수령금액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]['10년차 수령금액'],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]['10년차 수령금액']],
+        "총 수령액":[backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[0]["총 수령액"],backtest_object.portfolio_object.portfolio_receive_with_tax_benefit[1]["총 수령액"]]
+    },
+                      index=['방법1','방법2'])
+    display(df)
+    display(df2)
     db.close()  
