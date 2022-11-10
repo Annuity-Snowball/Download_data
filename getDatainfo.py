@@ -126,7 +126,7 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
         for day in a:
             while 1:
                 if day not in datetimeList:  # 개장일에 포함되어 있으면
-                    day = day + timedelta(days=1)
+                    day = day + timedelta(days=-1)
                 else:
                     break
             rtList.append(day.strftime('%Y-%m-%d'))  # yyyy-mm-dd 형식 변환
@@ -137,4 +137,4 @@ def getRebalanceDateInfo(start_date, end_date, month_type, interval):  # 리밸�
 # print(getDailyDateInfo('2022-01-01', '2022-11-07'))
 # print(getYearlyDateInfo('2020-01-01', '2022-11-07'))
 # print(getPayInDateInfo('2020-01-01', '2022-09-07', '1'))
-print(getRebalanceDateInfo('2020-01-01', '2022-11-07', '1', 3))
+# print(getRebalanceDateInfo('2020-01-01', '2022-11-07', '1', 3))
