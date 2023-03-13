@@ -1,5 +1,3 @@
-# lock을 구현해야 할 듯, 다운로드가 그때그때 다르게 다운이 됨.... ㅠㅠ
-
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 # [2022.06.30] find_element_by_() 함수는 find_element(By., ) 과 같은 형태로 함수가 변경됨에 따른 추가 코드
@@ -113,26 +111,31 @@ def crawling_selenium(product_code,product_date):
                 
 
 if __name__ == '__main__':
-    
     # 필독!!!!
     # ad.csv 파일이 있는 경로로 수정 필요!
+    '''
     df = pd.read_csv("C:\self_project\snowball\Download_data\\ad.csv")
     code_list = list(df['code'])
     date_list = list(df['date'])
     payinDate_dict_bm = dict()
-
+    print('after ad.csv')
     for i in range(len(code_list)):
         payinDate_dict_bm[code_list[i]] = getDatainfo.getPayInDateInfo(date_list[i],
                                                                        datetime.today().strftime('%Y-%m-%d'), '0')
-
+    print('after payinDate')
     product_code_list = []
     product_date_list = []
     for stock_code in payinDate_dict_bm.keys():
         for search_date in payinDate_dict_bm[stock_code]:
             product_code_list.append(stock_code)
             product_date_list.append(search_date)
-            
-            
+    print('after product_code and date list')
+    '''
+    
+    # 테스트용
+    product_code_list = ['159800','159800','159800','159800','159800','159800','159800','159800','159800','159800']
+    product_date_list = ['2012-07-05','2013-07-05','2014-07-05','2015-07-05','2016-07-05','2017-07-05','2018-07-05','2019-07-05','2020-07-05','2021-07-05']   
+        
     _lock = threading.Lock()
     # 필독!!!!
     # max_workers의 개수는 컴퓨터 사양에 맞게 수정하면 됨!! 10개정도로 하면 될듯?
@@ -142,4 +145,5 @@ if __name__ == '__main__':
         # produt_code_list[] 와 product_date_list[] 슬라이싱들은 범위를 같게해서 해야함
         # 1050부터 시작하는 이유는 문환룡이 1050개까지는 다운로드를 했기 때문!
         # 범위 수정해가면서 실행하거나 [1050:] 으로 해서 나머지 한번에 다 다운 가능하면 그렇게 해도 됨!
-        executor.map(crawling_selenium, product_code_list[1050:2000], product_date_list[1050:2000])
+        executor.map(crawling_selenium, product_code_list, product_date_list)
+    # crawling_selenium('159800','2012-07-05')
