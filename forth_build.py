@@ -247,29 +247,6 @@ class Strategy():
         날짜는 지정이 안되어 있는 쿼리문을 반환 합니다!
         """
         
-        # if self.strategy_kind == 'PER 저':
-        #     # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-        #     self.sql_query='select ETF_code from etf_evaluate order by ETF_per asc limit '+str(self.product_count_per_strategy)
-        # elif self.strategy_kind == 'PER 고':
-        #     # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-        #     self.sql_query='select ETF_code from etf_evaluate order by ETF_per desc limit '+str(self.product_count_per_strategy)
-            
-        # # 평가지표의 범위를 입력받을 경우    
-        # elif self.strategy_kind == 'PER':
-        #     # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-        #     self.sql_query='select ETF_code from etf_evaluate where ETF_per >= '+str(self.min_value)+' and ETF_per <='+str(self.max_value)+' order by ETF_per asc limit '+str(self.product_count_per_strategy)
-        
-        # elif self.strategy_kind == 'PBR 저':
-        #     # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-        #     self.sql_query='select ETF_code from etf_evaluate order by ETF_pbr asc limit '+str(self.product_count_per_strategy)
-            
-        # elif self.strategy_kind == 'PBR 고':
-        # # product_ticker, product_evaluate, estimated_per 명칭은 아직 미정 - 전략을 통해 선택할 금융상품개수까지 포함한 쿼리문
-        #     self.sql_query='select ETF_code from etf_evaluate order by ETF_pbr desc limit '+str(self.product_count_per_strategy)
-            
-        # # 위에서의 'PER 저', 'PER 고' 같이 모든 평가 지표들 마다 쿼리문을 작성할 것
-        # pass
-        
         self.sql_query = (self.strategy_kind, self.product_count_per_strategy,self.min_value,self.max_value)
         return self.sql_query
 
@@ -310,19 +287,19 @@ class Backtest(Portfolio):
         for stratgy_input_info in self.stratgy_input_info_list: # '포트폴리오'를 구성하는 '전략의 개수'만큼 반복
             self.strategy_list.append(Strategy(*stratgy_input_info)) # 'Strategy() 클래스'를 이용해서 생성한 '전략'들을 '전략 리스트'에 추가
             self.strategy_name_list.append(stratgy_input_info[0])
-            self.strategy_product_number.append(stratgy_input_info[1])
+            # self.strategy_product_number.append(stratgy_input_info[1])
             
         self.strategy_sql_query_list = list() # 전략을 조회하는 쿼리문 들 리스트
         for strategy_object in self.strategy_list: # '전략리스트' 에 있는 모든 '전략'들에 대해서 반복
             self.strategy_sql_query_list.append(strategy_object.getProductListQuery()) # '전략'의 '전략종류를 통해 데이터베이스에서 정보를 가져올 쿼리문'들을 해당 리스트에 추가  ex) ['select product_date,product_ticker from product_evaluate order by per asc limit 2', 'select product_date,product_ticker from product_evaluate order by per desc limit 3']
           
             
-        self.purchase_assignment_amount_list =  [[] for _ in range(self.strategy_count)] # 구매할 때 할당금액
-        self.strategy_product_code = [[] for _ in range(self.strategy_count)] # 전략별금융상품코드
-        self.strategy_product_price = [[] for _ in range(self.strategy_count)] # 전략별금융상품가격
-        self.strategy_add_product_count = [[] for _ in range(self.strategy_count)] # 전략별추가할금융상품개수
-        self.strategy_accumulate_product_count = [[] for _ in range(self.strategy_count)] # 전략별누적금융상품개수
-        self.strategy_product_value = [[] for _ in range(self.strategy_count)] # 조회금융상품가치
+        self.purchase_assignment_amount_list =  list() # 구매할 때 할당금액
+        self.strategy_product_code = list() # 전략별금융상품코드
+        self.strategy_product_price = list() # 전략별금융상품가격
+        self.strategy_add_product_count = list() # 전략별추가할금융상품개수
+        self.strategy_accumulate_product_count = list() # 전략별누적금융상품개수
+        self.strategy_product_value = list() # 조회금융상품가치
         self.strategy_value = list() # 조회금융상품전략별가치
         
         self.current_portfolio_value_without_balance = 0 # 포트폴리오가치
@@ -382,15 +359,15 @@ class Backtest(Portfolio):
             
             
         # PCR 관련
-        elif strategy_kind == 'PCR 저': 
+        elif strategy_kind == 'PSR 저': 
             query = {"etf_date": product_date, "etf_pcr":{"$gt":0}}
             result = collection.find(query).sort("etf_pcr", 1).limit(product_count_per_strategy)
 
-        elif strategy_kind == 'PCR 고': 
+        elif strategy_kind == 'PSR 고': 
             query = {"etf_date": product_date, "etf_pcr":{"$gt":0}}
             result = collection.find(query).sort("etf_pcr", -1).limit(product_count_per_strategy)
             
-        elif strategy_kind == 'PCR': # 수치는 양수만 입력 하세요
+        elif strategy_kind == 'PSR': # 수치는 양수만 입력 하세요
             query = {"etf_date": product_date, "etf_pcr":{"$gt":0, "$gte":min_value, "$lte":max_value}}
             result = collection.find(query).sort("etf_pcr", 1).limit(product_count_per_strategy)
             
@@ -479,7 +456,7 @@ class Backtest(Portfolio):
             product_ticker_list = self.getProductTicker(strategy_query, backtesting_date)
             for product_ticker in product_ticker_list:
                 self.strategy_product_code[i].append(product_ticker)
-        # print('리밸런싱하면서 구매할 금융상품 코드 :', self.strategy_product_code)
+        print('리밸런싱하면서 구매할 금융상품 코드 :', self.strategy_product_code)
         
         
     def getStrategyProductPrice(self,backtesting_date):
@@ -487,27 +464,33 @@ class Backtest(Portfolio):
         for i,product_code_list in enumerate(self.strategy_product_code):
             for product_ticker in product_code_list:
                 self.strategy_product_price[i].append(self.getProductPrice(backtesting_date,product_ticker))
-        # print('현재 금융상품 가격 :', self.strategy_product_price)
+        print('현재 금융상품 가격 :', self.strategy_product_price)
     
     
     def getRebalanceStrategyProductCountandBalance(self,to_calculate_money):
-        # print('구매에 사용할 금액(잔액포함) :', to_calculate_money)
+        print('구매에 사용할 금액(잔액포함) :', to_calculate_money)
         self.purchase_assignment_amount_list= [[] for _ in range(self.strategy_count)]
         self.strategy_accumulate_product_count = [[] for _ in range(self.strategy_count)]
         self.current_balance = 0
-        for i,strategy_ratio in enumerate(self.strategy_ratio_list):
-            for j in range(self.strategy_product_number[i]):
-                self.purchase_assignment_amount_list[i].append((strategy_ratio*to_calculate_money//100)//self.strategy_product_number[i])
-                if j == 0:
-                    self.current_balance+=(strategy_ratio*to_calculate_money//100)%self.strategy_product_number[i]
-        # print('구매하려 할당한 금액 :', self.purchase_assignment_amount_list)
-        # print('구매하려 할당한 후 잔액 :', self.current_balance)
+        
+        for i,strategy_ratio in enumerate(self.strategy_ratio_list): # 는 [60,40]
+            strategy_product_number = len(self.strategy_product_code[i])  
+            print('strategy_product_number :',strategy_product_number)
+            # for j in range(self.strategy_product_number[i]):   # self.strategy_product_number 는 [2,2]
+            if strategy_product_number == 0:
+                self.current_balance+=(strategy_ratio*to_calculate_money//100)
+            else:
+                for _ in range(strategy_product_number):
+                    self.purchase_assignment_amount_list[i].append((strategy_ratio*to_calculate_money//100)//strategy_product_number) 
+            
+        print('구매하려 할당한 금액 :', self.purchase_assignment_amount_list)
+        print('구매하려 할당한 후 잔액 :', self.current_balance)
         for i,product_price_list in enumerate(self.strategy_product_price):
             for j,product_price in enumerate(product_price_list):
                 self.strategy_accumulate_product_count[i].append(int(self.purchase_assignment_amount_list[i][j]//product_price))
                 self.current_balance+=self.purchase_assignment_amount_list[i][j]%product_price
-        # print('리밸런싱 후 금융상품들 개수 :',self.strategy_accumulate_product_count)
-        # print('리밸런싱 후 현재 잔액 :', self.current_balance)
+        print('리밸런싱 후 금융상품들 개수 :',self.strategy_accumulate_product_count)
+        print('리밸런싱 후 현재 잔액 :', self.current_balance)
 
 
     def getStrategyProductValue(self):
@@ -515,22 +498,22 @@ class Backtest(Portfolio):
         for i,product_price_list in enumerate(self.strategy_product_price):
             for j, product_price in enumerate(product_price_list):
                 self.strategy_product_value[i].append(product_price * self.strategy_accumulate_product_count[i][j])
-        # print('금융상품들 가치 :', self.strategy_product_value)
+        print('금융상품들 가치 :', self.strategy_product_value)
         
         
     def getStrategyValue(self):
         self.strategy_value = list()
         for product_value in self.strategy_product_value:
             self.strategy_value.append(sum(product_value))
-        # print('전략별 가치 :', self.strategy_value)
+        print('전략별 가치 :', self.strategy_value)
     
     
     def getPortfolioValueWithoutBalanceAndBalance(self,backtesting_date):
         self.portfolio_value_without_balance_account[backtesting_date] = sum(self.strategy_value)
         self.current_portfolio_value_without_balance = sum(self.strategy_value)
-        # print('포트폴리오 가치 기록(잔액X) :', self.portfolio_value_without_balance_account)
+        print('포트폴리오 가치 기록(잔액X) :', self.portfolio_value_without_balance_account)
         self.balance_account[backtesting_date]=self.current_balance
-        # print('잔액기록 :', self.balance_account)
+        print('잔액기록 :', self.balance_account)
         
     
     def getInputwork(self,backtesting_date):
@@ -541,17 +524,23 @@ class Backtest(Portfolio):
         
         
     def updateProductcount(self, to_calculate_money):
-        # print('구매에 사용할 금액(잔액포함) :', to_calculate_money)
+        print('구매에 사용할 금액(잔액포함) :', to_calculate_money)
         self.purchase_assignment_amount_list= [[] for _ in range(self.strategy_count)]
         self.strategy_add_product_count = [[] for _ in range(self.strategy_count)]
         self.current_balance = 0
-        for i,strategy_ratio in enumerate(self.strategy_ratio_list):
-            for j in range(self.strategy_product_number[i]):
-                self.purchase_assignment_amount_list[i].append((strategy_ratio*to_calculate_money//100)//self.strategy_product_number[i])
-                if j == 0:
-                    self.current_balance+=(strategy_ratio*to_calculate_money//100)%self.strategy_product_number[i]
-        # print('구매하려 할당한 금액 :', self.purchase_assignment_amount_list)
-        # print('구매하려 할당한 후 잔액 :', self.current_balance)
+        
+        for i,strategy_ratio in enumerate(self.strategy_ratio_list): # 는 [60,40]
+            strategy_product_number = len(self.strategy_product_code[i])  
+            # for j in range(self.strategy_product_number[i]):   # self.strategy_product_number 는 [2,2]
+            if strategy_product_number == 0:
+                self.current_balance+=(strategy_ratio*to_calculate_money//100)
+            else:
+                for _ in range(strategy_product_number):
+                    self.purchase_assignment_amount_list[i].append((strategy_ratio*to_calculate_money//100)//strategy_product_number) 
+        
+                    
+        print('구매하려 할당한 금액 :', self.purchase_assignment_amount_list)
+        print('구매하려 할당한 후 잔액 :', self.current_balance)
         for i,product_price_list in enumerate(self.strategy_product_price):
             for j,product_price in enumerate(product_price_list):
                 self.strategy_add_product_count[i].append(int(self.purchase_assignment_amount_list[i][j]//product_price))
@@ -560,9 +549,9 @@ class Backtest(Portfolio):
             for j, add_product_count in enumerate(add_product_count_list):
                 self.strategy_accumulate_product_count[i][j]+=add_product_count
         
-        # print('구매할 금융상품들 개수 :', self.strategy_add_product_count)
-        # print('구매한 후 금융상품 누적 개수 :', self.strategy_accumulate_product_count)
-        # print('현재 잔액 :', self.current_balance)           
+        print('구매할 금융상품들 개수 :', self.strategy_add_product_count)
+        print('구매한 후 금융상품 누적 개수 :', self.strategy_accumulate_product_count)
+        print('현재 잔액 :', self.current_balance)           
     
     def getRealPortfolioValue(self):
         portfolio_value_account=dict()
@@ -573,6 +562,8 @@ class Backtest(Portfolio):
     
     def doBackTest(self):  
         # tax가 0이면 세제혜택 X, tax가 1이면 세제혜택 O
+        print('rebalance_date :', self.rebalance_date_list)
+        print('input_date :', self.input_date_list)
         for tax in range(2):
             self.tax_benefit_money = self.portfolio_start_money
             self.current_balance = self.portfolio_start_money
@@ -581,23 +572,24 @@ class Backtest(Portfolio):
             
             for backtesting_date in self.backtesting_date_list:
                 if (backtesting_date in self.tax_benfit_date_list) and tax ==1:# 세제혜택을 고려하고, 날짜가 세제환급받을 날짜들 중 하나이면
-                    # print('**********************************')
-                    # print('세제혜택 받을 금액 :', self.tax_benefit_money)
+                    print('**********************************')
+                    print('세제혜택 받을 금액 :', self.tax_benefit_money)
                     if self.tax_benefit_money >= 7000000: # 세제혜택 받을 금액이 700만원 이상이면(irp 기준)
                         self.tax_benefit_money = 7000000 * 0.165 # 700만원의 16.5% 금액을 환급
                     else:# 세제혜택 받을 금액이 700만원 이하이면
                         self.tax_benefit_money *= 0.165 # 금액의 16.5% 금액을 환급
                     
                     self.current_balance += self.tax_benefit_money
-                    # print('세제환급 받을 금액 :', self.tax_benefit_money)
-                    # print('세제혜택 받은 후 현재 총 잔액 : ',self.current_balance)
+                    print('세제환급 받을 금액 :', self.tax_benefit_money)
+                    print('세제혜택 받은 후 현재 총 잔액 : ',self.current_balance)
                     self.tax_benefit_money =0 # 세제혜택 받을 금액으로 0원으로 초기화
         
                 if backtesting_date in self.rebalance_date_list:
-                    # print("==================================")
-                    # print(backtesting_date, "리밸런싱")
-                    # print("==================================")
+                    print("==================================")
+                    print(backtesting_date, "리밸런싱")
+                    print("==================================")
                     if backtesting_date in self.input_date_list and backtesting_date != self.rebalance_date_list[0]:  # '조회날짜'가 '납입날짜 리스트'에 있고, '조회날짜'가 '리밸런싱 날짜리스트'의 첫번째 날짜가 아니면(리밸런싱하는 첫번째 날이면 납입금액을 더하지 않아야 하므로)
+                        print("금액납입도 있음!")
                         self.getInputwork(backtesting_date)
                     self.getRebalanceStrategyProductCode(backtesting_date)
                     self.getStrategyProductPrice(backtesting_date)
@@ -605,32 +597,32 @@ class Backtest(Portfolio):
                     self.getStrategyProductValue()
                     self.getStrategyValue()
                     self.getPortfolioValueWithoutBalanceAndBalance(backtesting_date)
-                    # print()
+                    print()
                 
                 elif backtesting_date in self.input_date_list:
-                    # print("==================================")
-                    # print(backtesting_date, "납입날짜")
-                    # print("==================================")
+                    print("==================================")
+                    print(backtesting_date, "납입날짜")
+                    print("==================================")
                     self.getStrategyProductPrice(backtesting_date)
                     self.getInputwork(backtesting_date)
                     self.updateProductcount(self.current_balance)
                     self.getStrategyProductValue()
                     self.getStrategyValue()
                     self.getPortfolioValueWithoutBalanceAndBalance(backtesting_date)
-                    # print()
+                    print()
                 
                 else:
-                    # print("==================================")
-                    # print(backtesting_date, "나머지 경우")
-                    # print("==================================")
+                    print("==================================")
+                    print(backtesting_date, "나머지 경우")
+                    print("==================================")
                     self.input_money_to_portfolio_account[backtesting_date] = self.input_money_sum
                     self.getStrategyProductPrice(backtesting_date)
-                    # print('금융상품 코드 :', self.strategy_product_code)
-                    # print('금융상품들 개수 :',self.strategy_accumulate_product_count)
+                    print('금융상품 코드 :', self.strategy_product_code)
+                    print('금융상품들 개수 :',self.strategy_accumulate_product_count)
                     self.getStrategyProductValue()
                     self.getStrategyValue()
                     self.getPortfolioValueWithoutBalanceAndBalance(backtesting_date)
-                    # print()
+                    print()
                     
             if tax == 0: # 세제혜택 X 인 경우 결과값들 입력
                 self.portfolio_without_tax_benefit_account = self.getRealPortfolioValue() # 포트폴리오 가치 추이
@@ -643,22 +635,22 @@ class Backtest(Portfolio):
                 self.portfolio_object.portfolio_receive_with_tax_benefit = self.portfolio_object.receiptSimul(self.portfolio_object.portfolio_account_with_tax_benefit,10) # 몇년 수령할지 입력(10년 디폴트이고 나중에 사용자 맞게 수정 가능)
         
         print("*************** 세제혜택X ***************")
-        # print()
-        # print('포트폴리오 가치 추이(잔액포함0):',self.portfolio_without_tax_benefit_account)
-        # print()
-        # print('포트폴리오 납입금액 추이:', self.input_money_to_portfolio_account)
-        # print()
+        print()
+        print('포트폴리오 가치 추이(잔액포함0):',self.portfolio_without_tax_benefit_account)
+        print()
+        print('포트폴리오 납입금액 추이:', self.input_money_to_portfolio_account)
+        print()
         print('포트폴리오 결과 :',self.portfolio_object.portfolio_account_without_tax_benefit)
         print()
         print('포트폴리오 수령방법 :',self.portfolio_object.portfolio_receive_without_tax_benefit)
         
         print()
         print("*************** 세제혜택0 ***************")
-        # print()
+        print()
         print('포트폴리오 가치 추이(잔액포함0):',self.portfolio_with_tax_benefit_account)
         print()
-        # print('포트폴리오 납입금액 추이:', self.input_money_to_portfolio_account)
-        # print()
+        print('포트폴리오 납입금액 추이:', self.input_money_to_portfolio_account)
+        print()
         print('포트폴리오 결과 :', self.portfolio_object.portfolio_account_with_tax_benefit)
         print()
         print('포트폴리오 수령방법 :',self.portfolio_object.portfolio_receive_with_tax_benefit)
@@ -685,7 +677,9 @@ if __name__ == "__main__":
     # start_time = time.time()    
     # print("start!!")
     # print()
-    backtest_object = Backtest('189', 'test', 1000000, [60,40], '2018-10-01', '2019-05-01', 3, '0', 600000, [['PER 저', 2, 0, 0], ['OperatingRatio', 2, 8, 15]])
+    backtest_object = Backtest('189', 'test', 1000000, [50,50], '2018-10-01', '2019-05-01', 3, '0', 600000, [['PER 저', 2, 0, 0], ['OperatingRatio', 2, 50, 100]])
+
+
     backtest_object.doBackTest()
     
     # 코드 실행 시간 측정 종료
